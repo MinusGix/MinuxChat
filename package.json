@@ -1,0 +1,20 @@
+{
+  "name": "minuxchat",
+  "version": "1.0.0",
+  "description": "A minimal, distraction-free chat application for the web",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "chat"
+  ],
+  "license": "GPL-3.0",
+  "dependencies": {
+    "ws": "^1.1.1"
+  },
+  "engines": {
+    "node": ">=0.12.0"
+  }
+}
