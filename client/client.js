@@ -27,20 +27,20 @@ var frontpage = [
 	"No message history is retained on the hack.chat server.",
 ].join("\n");
 
-function $(query) {return document.querySelector(query);}
+function $(query) {
+	return document.querySelector(query);
+}
 
 function localStorageGet(key) {
 	try {
 		return window.localStorage[key];
-	}
-	catch(e) {}
+	} catch(e) {}
 }
 
 function localStorageSet(key, val) {
 	try {
 		window.localStorage[key] = val;
-	}
-	catch(e) {}
+	} catch(e) {}
 }
 
 
@@ -53,7 +53,7 @@ var lastSentPos = 0;
 
 // Ping server every 50 seconds to retain WebSocket connection
 window.setInterval(function() {
-	send({cmd: 'ping'});
+	send({ cmd: 'ping' });
 }, 50000);
 
 
@@ -61,8 +61,7 @@ function join(channel) {
 	if (document.domain == 'hack.chat') {
 		// For https://hack.chat/
 		ws = new WebSocket('wss://hack.chat/chat-ws');
-	}
-	else {
+	} else {
 		// for local installs
 		ws = new WebSocket('ws://' + document.domain + ':6060');
 	}
@@ -73,21 +72,20 @@ function join(channel) {
 		if (!wasConnected) {
 			if (location.hash) {
 				myNick = location.hash.substr(1);
-			}
-			else {
+			} else {
 				myNick = prompt('Nickname:', myNick);
 			}
 		}
 		if (myNick) {
 			localStorageSet('my-nick', myNick);
-			send({cmd: 'join', channel: channel, nick: myNick});
+			send({ cmd: 'join', channel: channel, nick: myNick });
 		}
 		wasConnected = true;
 	};
 
 	ws.onclose = function() {
 		if (wasConnected) {
-			pushMessage({nick: '!', text: "Server disconnected. Attempting to reconnect..."});
+			pushMessage({ nick: '!', text: "Server disconnected. Attempting to reconnect..." });
 		}
 		window.setTimeout(function() {
 			join(channel);
@@ -124,20 +122,20 @@ var COMMANDS = {
 		nicks.forEach(function(nick) {
 			userAdd(nick);
 		});
-		pushMessage({nick: '*', text: "Users online: " + nicks.join(", ")});
+		pushMessage({ nick: '*', text: "Users online: " + nicks.join(", ") });
 	},
 	onlineAdd: function(args) {
 		var nick = args.nick;
 		userAdd(nick);
 		if ($('#joined-left').checked) {
-			pushMessage({nick: '*', text: nick + " joined"});
+			pushMessage({ nick: '*', text: nick + " joined" });
 		}
 	},
 	onlineRemove: function(args) {
 		var nick = args.nick;
 		userRemove(nick);
 		if ($('#joined-left').checked) {
-			pushMessage({nick: '*', text: nick + " left"});
+			pushMessage({ nick: '*', text: nick + " left" });
 		}
 	},
 };
@@ -150,17 +148,13 @@ function pushMessage(args) {
 
 	if (args.nick == myNick) {
 		messageEl.classList.add('me');
-	}
-	else if (args.nick == '!') {
+	} else if (args.nick == '!') {
 		messageEl.classList.add('warn');
-	}
-	else if (args.nick == '*') {
+	} else if (args.nick == '*') {
 		messageEl.classList.add('info');
-	}
-	else if (args.admin) {
+	} else if (args.admin) {
 		messageEl.classList.add('admin');
-	}
-	else if (args.mod) {
+	} else if (args.mod) {
 		messageEl.classList.add('mod');
 	}
 
@@ -288,21 +282,20 @@ $('#chatinput').onkeydown = function(e) {
 	if (e.keyCode == 13 /* ENTER */ && !e.shiftKey) {
 		e.preventDefault();
 		// Submit message
-		if (e.target.value != '') {
+		if (e.target.value !== '') {
 			var text = e.target.value;
 			e.target.value = '';
-			send({cmd: 'chat', text: text});
+			send({ cmd: 'chat', text });
 			lastSent[0] = text;
 			lastSent.unshift("");
 			lastSentPos = 0;
 			updateInputSize();
 		}
-	}
-	else if (e.keyCode == 38 /* UP */) {
+	} else if (e.keyCode == 38 /* UP */) {
 		// Restore previous sent messages
 		if (e.target.selectionStart === 0 && lastSentPos < lastSent.length - 1) {
 			e.preventDefault();
-			if (lastSentPos == 0) {
+			if (lastSentPos === 0) {
 				lastSent[0] = e.target.value;
 			}
 			lastSentPos += 1;
@@ -310,8 +303,7 @@ $('#chatinput').onkeydown = function(e) {
 			e.target.selectionStart = e.target.selectionEnd = e.target.value.length;
 			updateInputSize();
 		}
-	}
-	else if (e.keyCode == 40 /* DOWN */) {
+	} else if (e.keyCode == 40 /* DOWN */) {
 		if (e.target.selectionStart === e.target.value.length && lastSentPos > 0) {
 			e.preventDefault();
 			lastSentPos -= 1;
@@ -319,16 +311,14 @@ $('#chatinput').onkeydown = function(e) {
 			e.target.selectionStart = e.target.selectionEnd = 0;
 			updateInputSize();
 		}
-	}
-	else if (e.keyCode == 27 /* ESC */) {
+	} else if (e.keyCode == 27 /* ESC */) {
 		e.preventDefault();
 		// Clear input field
 		e.target.value = "";
 		lastSentPos = 0;
 		lastSent[lastSentPos] = "";
 		updateInputSize();
-	}
-	else if (e.keyCode == 9 /* TAB */) {
+	} else if (e.keyCode == 9 /* TAB */) {
 		// Tab complete nicknames starting with @
 		e.preventDefault();
 		var pos = e.target.selectionStart || 0;
@@ -338,7 +328,7 @@ $('#chatinput').onkeydown = function(e) {
 			var stub = text.substring(index + 1, pos).toLowerCase();
 			// Search for nick beginning with stub
 			var nicks = onlineUsers.filter(function(nick) {
-				return nick.toLowerCase().indexOf(stub) == 0;
+				return nick.toLowerCase().indexOf(stub) === 0;
 			});
 			if (nicks.length == 1) {
 				insertAtCursor(nicks[0].substr(stub.length) + " ");
@@ -447,7 +437,7 @@ function usersClear() {
 }
 
 function userInvite(nick) {
-	send({cmd: 'invite', nick: nick});
+	send({ cmd: 'invite', nick: nick });
 }
 
 function userIgnore(nick) {
@@ -508,11 +498,10 @@ $('#scheme-selector').value = currentScheme;
 
 /* main */
 
-if (myChannel == '') {
-	pushMessage({text: frontpage});
+if (myChannel === '') {
+	pushMessage({ text: frontpage });
 	$('#footer').classList.add('hidden');
 	$('#sidebar').classList.add('hidden');
-}
-else {
+} else {
 	join(myChannel);
 }

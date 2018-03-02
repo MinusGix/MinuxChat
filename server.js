@@ -10,15 +10,14 @@ function loadConfig(filename) {
 		var data = fs.readFileSync(filename, 'utf8');
 		config = JSON.parse(data);
 		console.log("Loaded config '" + filename + "'");
-	}
-	catch (e) {
+	} catch (e) {
 		console.warn(e);
 	}
 }
 
 var configFilename = 'JSON/config.json';
 loadConfig(configFilename);
-fs.watchFile(configFilename, {persistent: false}, function() {
+fs.watchFile(configFilename, { persistent: false }, function() {
 	loadConfig(configFilename);
 });
 
@@ -39,7 +38,7 @@ server.on('connection', function(socket) {
 		try {
 			// Don't penalize yet, but check whether IP is rate-limited
 			if (POLICE.frisk(getAddress(socket), 0)) {
-				send({cmd: 'warn', text: "Your IP is being rate-limited or blocked."}, socket);
+				send({ cmd: 'warn', text: "Your IP is being rate-limited or blocked." }, socket);
 				return;
 			}
 			// Penalize here, but don't do anything about it
@@ -55,8 +54,7 @@ server.on('connection', function(socket) {
 			if (command && args) {
 				command.call(socket, args);
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			// Socket sent malformed JSON or buffer contains invalid JSON
 			// For security reasons, we should kill it
 			socket._receiver.flush();
@@ -70,10 +68,9 @@ server.on('connection', function(socket) {
 	socket.on('close', function() {
 		try {
 			if (socket.channel) {
-				broadcast({cmd: 'onlineRemove', nick: socket.nick}, socket.channel);
+				broadcast({ cmd: 'onlineRemove', nick: socket.nick }, socket.channel);
 			}
-		}
-		catch (e) {
+		} catch (e) {
 			console.warn(e.stack);
 		}
 	});
@@ -86,8 +83,7 @@ function send(data, client) {
 		if (client.readyState == ws.OPEN) {
 			client.send(JSON.stringify(data));
 		}
-	}
-	catch (e) {
+	} catch (e) {
 		// Ignore exceptions thrown by client.send()
 	}
 }
@@ -153,7 +149,7 @@ var COMMANDS = {
 		var nick = String(args.nick);
 
 		if (POLICE.frisk(getAddress(this), 3)) {
-			send({cmd: 'warn', text: "You are joining channels too fast. Wait a moment and try again."}, this);
+			send({ cmd: 'warn', text: "You are joining channels too fast. Wait a moment and try again." }, this);
 			return;
 		}
 
@@ -174,18 +170,17 @@ var COMMANDS = {
 		nick = nickArr[0].trim();
 
 		if (!nicknameValid(nick)) {
-			send({cmd: 'warn', text: "Nickname must consist of up to 24 letters, numbers, and underscores"}, this);
+			send({ cmd: 'warn', text: "Nickname must consist of up to 24 letters, numbers, and underscores" }, this);
 			return;
 		}
 
 		var password = nickArr[1];
 		if (nick.toLowerCase() == config.admin.toLowerCase()) {
 			if (password != config.password) {
-				send({cmd: 'warn', text: "Cannot impersonate the admin"}, this);
+				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, this);
 				return;
 			}
-		}
-		else if (password) {
+		} else if (password) {
 			this.trip = hash(password);
 		}
 
@@ -193,14 +188,14 @@ var COMMANDS = {
 		for (var client of server.clients) {
 			if (client.channel === channel) {
 				if (client.nick.toLowerCase() === nick.toLowerCase()) {
-					send({cmd: 'warn', text: "Nickname taken"}, this);
+					send({ cmd: 'warn', text: "Nickname taken" }, this);
 					return;
 				}
 			}
 		}
 
 		// Announce the new user
-		broadcast({cmd: 'onlineAdd', nick: nick}, channel);
+		broadcast({ cmd: 'onlineAdd', nick }, channel);
 
 		// Formally join channel
 		this.channel = channel;
@@ -213,7 +208,7 @@ var COMMANDS = {
 				nicks.push(client.nick);
 			}
 		}
-		send({cmd: 'onlineSet', nicks: nicks}, this);
+		send({ cmd: 'onlineSet', nicks: nicks }, this);
 	},
 
 	chat: function(args) {
@@ -232,20 +227,21 @@ var COMMANDS = {
 
 		var score = text.length / 83 / 4;
 		if (POLICE.frisk(getAddress(this), score)) {
-			send({cmd: 'warn', text: "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message."}, this);
+			send({ cmd: 'warn', text: "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message." }, this);
 			return;
 		}
 
-		var data = {cmd: 'chat', nick: this.nick, text: text};
+		var data = { cmd: 'chat', nick: this.nick, text };
 		if (isAdmin(this)) {
 			data.admin = true;
-		}
-		else if (isMod(this)) {
+		} else if (isMod(this)) {
 			data.mod = true;
 		}
+		
 		if (this.trip) {
 			data.trip = this.trip;
 		}
+
 		broadcast(data, this.channel);
 	},
 
@@ -256,7 +252,7 @@ var COMMANDS = {
 		}
 
 		if (POLICE.frisk(getAddress(this), 2)) {
-			send({cmd: 'warn', text: "You are sending invites too fast. Wait a moment before trying again."}, this);
+			send({ cmd: 'warn', text: "You are sending invites too fast. Wait a moment before trying again." }, this);
 			return;
 		}
 
@@ -269,28 +265,32 @@ var COMMANDS = {
 			}
 		}
 		if (!friend) {
-			send({cmd: 'warn', text: "Could not find user in channel"}, this);
+			send({ cmd: 'warn', text: "Could not find user in channel" }, this);
 			return;
 		}
+
 		if (friend == this) {
 			// Ignore silently
 			return;
 		}
+
 		var channel = Math.random().toString(36).substr(2, 8);
-		send({cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel}, this);
-		send({cmd: 'info', text: this.nick + " invited you to ?" + channel}, friend);
+		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, this);
+		send({ cmd: 'info', text: this.nick + " invited you to ?" + channel }, friend);
 	},
 
 	stats: function(args) {
 		var ips = {};
 		var channels = {};
+
 		for (var client of server.clients) {
 			if (client.channel) {
 				channels[client.channel] = true;
 				ips[getAddress(client)] = true;
 			}
 		}
-		send({cmd: 'info', text: Object.keys(ips).length + " unique IPs in " + Object.keys(channels).length + " channels"}, this);
+
+		send({ cmd: 'info', text: Object.keys(ips).length + " unique IPs in " + Object.keys(channels).length + " channels" }, this);
 	},
 
 	// Moderator-only commands below this point
@@ -310,18 +310,18 @@ var COMMANDS = {
 		}, this)[0];
 
 		if (!badClient) {
-			send({cmd: 'warn', text: "Could not find " + nick}, this);
+			send({ cmd: 'warn', text: "Could not find " + nick }, this);
 			return;
 		}
 
 		if (isMod(badClient)) {
-			send({cmd: 'warn', text: "Cannot ban moderator"}, this);
+			send({ cmd: 'warn', text: "Cannot ban moderator" }, this);
 			return;
 		}
 
 		POLICE.arrest(getAddress(badClient));
 		console.log(this.nick + " [" + this.trip + "] banned " + nick + " in " + this.channel);
-		broadcast({cmd: 'info', text: "Banned " + nick}, this.channel);
+		broadcast({ cmd: 'info', text: "Banned " + nick }, this.channel);
 	},
 
 	unban: function(args) {
@@ -336,7 +336,7 @@ var COMMANDS = {
 
 		POLICE.pardon(ip);
 		console.log(this.nick + " [" + this.trip + "] unbanned " + ip + " in " + this.channel);
-		send({cmd: 'info', text: "Unbanned " + ip}, this);
+		send({ cmd: 'info', text: "Unbanned " + ip }, this);
 	},
 
 	// Admin-only commands below this point
@@ -361,7 +361,7 @@ var COMMANDS = {
 		}
 		var text = server.clients.length + " users online:\n\n";
 		text += lines.join("\n");
-		send({cmd: 'info', text: text}, this);
+		send({ cmd: 'info', text: text }, this);
 	},
 
 	broadcast: function(args) {
@@ -369,7 +369,7 @@ var COMMANDS = {
 			return;
 		}
 		var text = String(args.text);
-		broadcast({cmd: 'info', text: "Server broadcast: " + text});
+		broadcast({ cmd: 'info', text: "Server broadcast: " + text });
 	},
 };
 
@@ -385,10 +385,10 @@ var POLICE = {
 		try {
 			var text = fs.readFileSync(filename, 'utf8');
 			ids = text.split(/\r?\n/);
-		}
-		catch (e) {
+		} catch (e) {
 			return;
 		}
+
 		for (var id of ids) {
 			if (id && id[0] != '#') {
 				this.arrest(id);
