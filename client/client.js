@@ -1,5 +1,5 @@
 /* jshint esversion:6 */
-var frontpage = [
+let frontpage = [
 	"                            _           _         _       _   ",
 	"                           | |_ ___ ___| |_   ___| |_ ___| |_ ",
 	"                           |   |_ ||  _| '_| |  _|   |_ ||  _|",
@@ -44,11 +44,11 @@ function localStorageSet(key, val) {
 }
 
 
-var ws;
-var myNick = localStorageGet('my-nick');
-var myChannel = window.location.search.replace(/^\?/, '');
-var lastSent = [""];
-var lastSentPos = 0;
+let ws;
+let myNick = localStorageGet('my-nick');
+let myChannel = window.location.search.replace(/^\?/, '');
+let lastSent = [""];
+let lastSentPos = 0;
 
 
 // Ping server every 50 seconds to retain WebSocket connection
@@ -66,7 +66,7 @@ function join(channel) {
 		ws = new WebSocket('ws://' + document.domain + ':6060');
 	}
 
-	var wasConnected = false;
+	let wasConnected = false;
 
 	ws.onopen = function() {
 		if (!wasConnected) {
@@ -93,15 +93,15 @@ function join(channel) {
 	};
 
 	ws.onmessage = function(message) {
-		var args = JSON.parse(message.data);
-		var cmd = args.cmd;
-		var command = COMMANDS[cmd];
+		let args = JSON.parse(message.data);
+		let cmd = args.cmd;
+		let command = COMMANDS[cmd];
 		command.call(null, args);
 	};
 }
 
 
-var COMMANDS = {
+let COMMANDS = {
 	chat: function(args) {
 		if (ignoredUsers.indexOf(args.nick) >= 0) {
 			return;
@@ -117,7 +117,7 @@ var COMMANDS = {
 		pushMessage(args);
 	},
 	onlineSet: function(args) {
-		var nicks = args.nicks;
+		let nicks = args.nicks;
 		usersClear();
 		nicks.forEach(function(nick) {
 			userAdd(nick);
@@ -125,14 +125,14 @@ var COMMANDS = {
 		pushMessage({ nick: '*', text: "Users online: " + nicks.join(", ") });
 	},
 	onlineAdd: function(args) {
-		var nick = args.nick;
+		let nick = args.nick;
 		userAdd(nick);
 		if ($('#joined-left').checked) {
 			pushMessage({ nick: '*', text: nick + " joined" });
 		}
 	},
 	onlineRemove: function(args) {
-		var nick = args.nick;
+		let nick = args.nick;
 		userRemove(nick);
 		if ($('#joined-left').checked) {
 			pushMessage({ nick: '*', text: nick + " left" });
@@ -143,7 +143,7 @@ var COMMANDS = {
 
 function pushMessage(args) {
 	// Message container
-	var messageEl = document.createElement('div');
+	let messageEl = document.createElement('div');
 	messageEl.classList.add('message');
 
 	if (args.nick == myNick) {
@@ -159,31 +159,31 @@ function pushMessage(args) {
 	}
 
 	// Nickname
-	var nickSpanEl = document.createElement('span');
+	let nickSpanEl = document.createElement('span');
 	nickSpanEl.classList.add('nick');
 	messageEl.appendChild(nickSpanEl);
 
 	if (args.trip) {
-		var tripEl = document.createElement('span');
+		let tripEl = document.createElement('span');
 		tripEl.textContent = args.trip + " ";
 		tripEl.classList.add('trip');
 		nickSpanEl.appendChild(tripEl);
 	}
 
 	if (args.nick) {
-		var nickLinkEl = document.createElement('a');
+		let nickLinkEl = document.createElement('a');
 		nickLinkEl.textContent = args.nick;
 		nickLinkEl.onclick = function() {
 			insertAtCursor("@" + args.nick + " ");
 			$('#chatinput').focus();
 		};
-		var date = new Date(args.time || Date.now());
+		let date = new Date(args.time || Date.now());
 		nickLinkEl.title = date.toLocaleString();
 		nickSpanEl.appendChild(nickLinkEl);
 	}
 
 	// Text
-	var textEl = document.createElement('pre');
+	let textEl = document.createElement('pre');
 	textEl.classList.add('text');
 
 	textEl.textContent = args.text || '';
@@ -192,7 +192,7 @@ function pushMessage(args) {
 	messageEl.appendChild(textEl);
 
 	// Scroll to bottom
-	var atBottom = isAtBottom();
+	let atBottom = isAtBottom();
 	$('#messages').appendChild(messageEl);
 	if (atBottom) {
 		window.scrollTo(0, document.body.scrollHeight);
@@ -204,10 +204,10 @@ function pushMessage(args) {
 
 
 function insertAtCursor(text) {
-	var input = $('#chatinput');
-	var start = input.selectionStart || 0;
-	var before = input.value.substr(0, start);
-	var after = input.value.substr(start);
+	let input = $('#chatinput');
+	let start = input.selectionStart || 0;
+	let before = input.value.substr(0, start);
+	let after = input.value.substr(start);
 	before += text;
 	input.value = before + after;
 	input.selectionStart = input.selectionEnd = before.length;
@@ -223,17 +223,17 @@ function send(data) {
 
 
 function parseLinks(g0) {
-	var a = document.createElement('a');
+	let a = document.createElement('a');
 	a.innerHTML = g0;
-	var url = a.textContent;
+	let url = a.textContent;
 	a.href = url;
 	a.target = '_blank';
 	return a.outerHTML;
 }
 
 
-var windowActive = true;
-var unread = 0;
+let windowActive = true;
+let unread = 0;
 
 window.onfocus = function() {
 	windowActive = true;
@@ -259,7 +259,7 @@ function updateTitle() {
 		unread = 0;
 	}
 
-	var title;
+	let title;
 	if (myChannel) {
 		title = "?" + myChannel;
 	}
@@ -283,7 +283,7 @@ $('#chatinput').onkeydown = function(e) {
 		e.preventDefault();
 		// Submit message
 		if (e.target.value !== '') {
-			var text = e.target.value;
+			let text = e.target.value;
 			e.target.value = '';
 			send({ cmd: 'chat', text });
 			lastSent[0] = text;
@@ -321,13 +321,13 @@ $('#chatinput').onkeydown = function(e) {
 	} else if (e.keyCode == 9 /* TAB */) {
 		// Tab complete nicknames starting with @
 		e.preventDefault();
-		var pos = e.target.selectionStart || 0;
-		var text = e.target.value;
-		var index = text.lastIndexOf('@', pos);
+		let pos = e.target.selectionStart || 0;
+		let text = e.target.value;
+		let index = text.lastIndexOf('@', pos);
 		if (index >= 0) {
-			var stub = text.substring(index + 1, pos).toLowerCase();
+			let stub = text.substring(index + 1, pos).toLowerCase();
 			// Search for nick beginning with stub
-			var nicks = onlineUsers.filter(function(nick) {
+			let nicks = onlineUsers.filter(function(nick) {
 				return nick.toLowerCase().indexOf(stub) === 0;
 			});
 			if (nicks.length == 1) {
@@ -339,9 +339,9 @@ $('#chatinput').onkeydown = function(e) {
 
 
 function updateInputSize() {
-	var atBottom = isAtBottom();
+	let atBottom = isAtBottom();
 
-	var input = $('#chatinput');
+	let input = $('#chatinput');
 	input.style.height = 0;
 	input.style.height = input.scrollHeight + 'px';
 	document.body.style.marginBottom = $('#footer').offsetHeight + 'px';
@@ -373,7 +373,7 @@ $('#sidebar').onmouseleave = document.ontouchstart = function() {
 
 $('#clear-messages').onclick = function() {
 	// Delete children elements
-	var messages = $('#messages');
+	let messages = $('#messages');
 	while (messages.firstChild) {
 		messages.removeChild(messages.firstChild);
 	}
@@ -398,38 +398,38 @@ $('#joined-left').onchange = function(e) {
 
 // User list
 
-var onlineUsers = [];
-var ignoredUsers = [];
+let onlineUsers = [];
+let ignoredUsers = [];
 
 function userAdd(nick) {
-	var user = document.createElement('a');
+	let user = document.createElement('a');
 	user.textContent = nick;
 	user.onclick = function(e) {
 		userInvite(nick);
 	};
-	var userLi = document.createElement('li');
+	let userLi = document.createElement('li');
 	userLi.appendChild(user);
 	$('#users').appendChild(userLi);
 	onlineUsers.push(nick);
 }
 
 function userRemove(nick) {
-	var users = $('#users');
-	var children = users.children;
-	for (var i = 0; i < children.length; i++) {
-		var user = children[i];
+	let users = $('#users');
+	let children = users.children;
+	for (let i = 0; i < children.length; i++) {
+		let user = children[i];
 		if (user.textContent == nick) {
 			users.removeChild(user);
 		}
 	}
-	var index = onlineUsers.indexOf(nick);
+	let index = onlineUsers.indexOf(nick);
 	if (index >= 0) {
 		onlineUsers.splice(index, 1);
 	}
 }
 
 function usersClear() {
-	var users = $('#users');
+	let users = $('#users');
 	while (users.firstChild) {
 		users.removeChild(users.firstChild);
 	}
@@ -446,7 +446,7 @@ function userIgnore(nick) {
 
 /* color scheme switcher */
 
-var schemes = [
+let schemes = [
 	'android',
 	'atelier-dune',
 	'atelier-forest',
@@ -468,7 +468,7 @@ var schemes = [
 	'tomorrow',
 ];
 
-var currentScheme = 'atelier-dune';
+let currentScheme = 'atelier-dune';
 
 function setScheme(scheme) {
 	currentScheme = scheme;
@@ -478,7 +478,7 @@ function setScheme(scheme) {
 
 // Add scheme options to dropdown selector
 schemes.forEach(function(scheme) {
-	var option = document.createElement('option');
+	let option = document.createElement('option');
 	option.textContent = scheme;
 	option.value = scheme;
 	$('#scheme-selector').appendChild(option);

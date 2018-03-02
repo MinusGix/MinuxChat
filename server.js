@@ -1,13 +1,13 @@
 /* jshint esversion:6 */
-var fs = require('fs');
-var ws = require('ws');
-var crypto = require('crypto');
+let fs = require('fs');
+let ws = require('ws');
+let crypto = require('crypto');
 
 
-var config = {};
+let config = {};
 function loadConfig(filename) {
 	try {
-		var data = fs.readFileSync(filename, 'utf8');
+		let data = fs.readFileSync(filename, 'utf8');
 		config = JSON.parse(data);
 		console.log("Loaded config '" + filename + "'");
 	} catch (e) {
@@ -15,14 +15,14 @@ function loadConfig(filename) {
 	}
 }
 
-var configFilename = 'JSON/config.json';
+let configFilename = 'JSON/config.json';
 loadConfig(configFilename);
 fs.watchFile(configFilename, { persistent: false }, function() {
 	loadConfig(configFilename);
 });
 
 
-var server = new ws.Server({ host: config.host, port: config.port });
+let server = new ws.Server({ host: config.host, port: config.port });
 console.log("Started server on " + config.host + ":" + config.port);
 
 server.on('connection', function(socket) {
@@ -48,9 +48,9 @@ server.on('connection', function(socket) {
 			if (data.length > 65536) {
 				return;
 			}
-			var args = JSON.parse(data);
-			var cmd = args.cmd;
-			var command = COMMANDS[cmd];
+			let args = JSON.parse(data);
+			let cmd = args.cmd;
+			let command = COMMANDS[cmd];
 			if (command && args) {
 				command.call(socket, args);
 			}
@@ -92,7 +92,7 @@ function send(data, client) {
 channel: if not null, restricts broadcast to clients in the channel
 */
 function broadcast(data, channel) {
-	for (var client of server.clients) {
+	for (let client of server.clients) {
 		if (channel ? client.channel === channel : client.channel) {
 			send(data, client);
 		}
@@ -118,7 +118,7 @@ function getAddress(client) {
 }
 
 function hash(password) {
-	var sha = crypto.createHash('sha256');
+	let sha = crypto.createHash('sha256');
 	sha.update(password + config.salt);
 	return sha.digest('base64').substr(0, 6);
 }
@@ -139,14 +139,14 @@ function isMod(client) {
 
 
 // `this` bound to client
-var COMMANDS = {
+let COMMANDS = {
 	ping: function() {
 		// Don't do anything
 	},
 
 	join: function(args) {
-		var channel = String(args.channel);
-		var nick = String(args.nick);
+		let channel = String(args.channel);
+		let nick = String(args.nick);
 
 		if (POLICE.frisk(getAddress(this), 3)) {
 			send({ cmd: 'warn', text: "You are joining channels too fast. Wait a moment and try again." }, this);
@@ -166,7 +166,7 @@ var COMMANDS = {
 		}
 
 		// Process nickname
-		var nickArr = nick.split('#', 2);
+		let nickArr = nick.split('#', 2);
 		nick = nickArr[0].trim();
 
 		if (!nicknameValid(nick)) {
@@ -174,7 +174,7 @@ var COMMANDS = {
 			return;
 		}
 
-		var password = nickArr[1];
+		let password = nickArr[1];
 		if (nick.toLowerCase() == config.admin.toLowerCase()) {
 			if (password != config.password) {
 				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, this);
@@ -184,8 +184,8 @@ var COMMANDS = {
 			this.trip = hash(password);
 		}
 
-		var address = getAddress(this);
-		for (var client of server.clients) {
+		let address = getAddress(this);
+		for (let client of server.clients) {
 			if (client.channel === channel) {
 				if (client.nick.toLowerCase() === nick.toLowerCase()) {
 					send({ cmd: 'warn', text: "Nickname taken" }, this);
@@ -202,8 +202,8 @@ var COMMANDS = {
 		this.nick = nick;
 
 		// Set the online users for new user
-		var nicks = [];
-		for (var client of server.clients) {
+		let nicks = [];
+		for (let client of server.clients) {
 			if (client.channel === channel) {
 				nicks.push(client.nick);
 			}
@@ -212,7 +212,7 @@ var COMMANDS = {
 	},
 
 	chat: function(args) {
-		var text = String(args.text);
+		let text = String(args.text);
 
 		if (!this.channel) {
 			return;
@@ -225,13 +225,13 @@ var COMMANDS = {
 			return;
 		}
 
-		var score = text.length / 83 / 4;
+		let score = text.length / 83 / 4;
 		if (POLICE.frisk(getAddress(this), score)) {
 			send({ cmd: 'warn', text: "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message." }, this);
 			return;
 		}
 
-		var data = { cmd: 'chat', nick: this.nick, text };
+		let data = { cmd: 'chat', nick: this.nick, text };
 		if (isAdmin(this)) {
 			data.admin = true;
 		} else if (isMod(this)) {
@@ -246,7 +246,7 @@ var COMMANDS = {
 	},
 
 	invite: function(args) {
-		var nick = String(args.nick);
+		let nick = String(args.nick);
 		if (!this.channel) {
 			return;
 		}
@@ -256,8 +256,8 @@ var COMMANDS = {
 			return;
 		}
 
-		var friend;
-		for (var client of server.clients) {
+		let friend;
+		for (let client of server.clients) {
 			// Find friend's client
 			if (client.channel == this.channel && client.nick == nick) {
 				friend = client;
@@ -274,16 +274,16 @@ var COMMANDS = {
 			return;
 		}
 
-		var channel = Math.random().toString(36).substr(2, 8);
+		let channel = Math.random().toString(36).substr(2, 8);
 		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, this);
 		send({ cmd: 'info', text: this.nick + " invited you to ?" + channel }, friend);
 	},
 
 	stats: function(args) {
-		var ips = {};
-		var channels = {};
+		let ips = {};
+		let channels = {};
 
-		for (var client of server.clients) {
+		for (let client of server.clients) {
 			if (client.channel) {
 				channels[client.channel] = true;
 				ips[getAddress(client)] = true;
@@ -300,12 +300,12 @@ var COMMANDS = {
 			return;
 		}
 
-		var nick = String(args.nick);
+		let nick = String(args.nick);
 		if (!this.channel) {
 			return;
 		}
 
-		var badClient = server.clients.filter(function(client) {
+		let badClient = server.clients.filter(function(client) {
 			return client.channel == this.channel && client.nick == nick;
 		}, this)[0];
 
@@ -329,7 +329,7 @@ var COMMANDS = {
 			return;
 		}
 
-		var ip = String(args.ip);
+		let ip = String(args.ip);
 		if (!this.channel) {
 			return;
 		}
@@ -345,8 +345,8 @@ var COMMANDS = {
 		if (!isAdmin(this)) {
 			return;
 		}
-		var channels = {};
-		for (var client of server.clients) {
+		let channels = {};
+		for (let client of server.clients) {
 			if (client.channel) {
 				if (!channels[client.channel]) {
 					channels[client.channel] = [];
@@ -355,11 +355,11 @@ var COMMANDS = {
 			}
 		}
 
-		var lines = [];
-		for (var channel in channels) {
+		let lines = [];
+		for (let channel in channels) {
 			lines.push("?" + channel + " " + channels[channel].join(", "));
 		}
-		var text = server.clients.length + " users online:\n\n";
+		let text = server.clients.length + " users online:\n\n";
 		text += lines.join("\n");
 		send({ cmd: 'info', text: text }, this);
 	},
@@ -368,28 +368,28 @@ var COMMANDS = {
 		if (!isAdmin(this)) {
 			return;
 		}
-		var text = String(args.text);
+		let text = String(args.text);
 		broadcast({ cmd: 'info', text: "Server broadcast: " + text });
 	},
 };
 
 
 // rate limiter
-var POLICE = {
+let POLICE = {
 	records: {},
 	halflife: 30000, // ms
 	threshold: 15,
 
 	loadJail: function(filename) {
-		var ids;
+		let ids;
 		try {
-			var text = fs.readFileSync(filename, 'utf8');
+			let text = fs.readFileSync(filename, 'utf8');
 			ids = text.split(/\r?\n/);
 		} catch (e) {
 			return;
 		}
 
-		for (var id of ids) {
+		for (let id of ids) {
 			if (id && id[0] != '#') {
 				this.arrest(id);
 			}
@@ -398,7 +398,7 @@ var POLICE = {
 	},
 
 	search: function(id) {
-		var record = this.records[id];
+		let record = this.records[id];
 		if (!record) {
 			record = this.records[id] = {
 				time: Date.now(),
@@ -409,7 +409,7 @@ var POLICE = {
 	},
 
 	frisk: function(id, deltaScore) {
-		var record = this.search(id);
+		let record = this.search(id);
 		if (record.arrested) {
 			return true;
 		}
@@ -424,14 +424,14 @@ var POLICE = {
 	},
 
 	arrest: function(id) {
-		var record = this.search(id);
+		let record = this.search(id);
 		if (record) {
 			record.arrested = true;
 		}
 	},
 
 	pardon: function(id) {
-		var record = this.search(id);
+		let record = this.search(id);
 		if (record) {
 			record.arrested = false;
 		}
