@@ -92,7 +92,7 @@ function join(channel) {
 		let args = JSON.parse(message.data);
 		let cmd = args.cmd;
 		let command = COMMANDS[cmd];
-		command.call(null, args);
+		command(args);
 	};
 }
 
@@ -115,7 +115,7 @@ let COMMANDS = {
 	onlineSet: args => {
 		let nicks = args.nicks;
 		usersClear();
-		nicks.forEach(nick =>userAdd(nick));
+		nicks.forEach(nick => userAdd(nick));
 		pushMessage({ nick: '*', text: "Users online: " + nicks.join(", ") });
 	},
 	onlineAdd: args => {
@@ -131,7 +131,7 @@ let COMMANDS = {
 		if ($('#joined-left').checked) {
 			pushMessage({ nick: '*', text: nick + " left" });
 		}
-	},
+	}
 };
 
 
@@ -140,9 +140,11 @@ function pushMessage(args) {
 	let messageEl = document.createElement('div');
 	messageEl.classList.add('message');
 
-	if (args.nick == myNick) {
+	if (args.nick === myNick) {
 		messageEl.classList.add('me');
-	} else if (args.nick == '!') {
+	}
+
+	if (args.nick == '!') {
 		messageEl.classList.add('warn');
 	} else if (args.nick == '*') {
 		messageEl.classList.add('info');
@@ -167,7 +169,7 @@ function pushMessage(args) {
 	if (args.nick) {
 		let nickLinkEl = document.createElement('a');
 		nickLinkEl.textContent = args.nick;
-		nickLinkEl.onclick = function() {
+		nickLinkEl.onclick = _ => {
 			insertAtCursor("@" + args.nick + " ");
 			$('#chatinput').focus();
 		};
@@ -187,7 +189,9 @@ function pushMessage(args) {
 
 	// Scroll to bottom
 	let atBottom = isAtBottom();
+
 	$('#messages').appendChild(messageEl);
+
 	if (atBottom) {
 		window.scrollTo(0, document.body.scrollHeight);
 	}
@@ -254,13 +258,14 @@ function updateTitle() {
 	let title;
 	if (myChannel) {
 		title = "?" + myChannel;
-	}
-	else {
+	} else {
 		title = "hack.chat";
 	}
+	
 	if (unread > 0) {
 		title = '(' + unread + ') ' + title;
 	}
+
 	document.title = title;
 }
 
@@ -375,12 +380,8 @@ if (localStorageGet('joined-left') == 'false') {
 	$('#joined-left').checked = false;
 }
 
-$('#pin-sidebar').onchange = function(e) {
-	localStorageSet('pin-sidebar', !!e.target.checked);
-};
-$('#joined-left').onchange = function(e) {
-	localStorageSet('joined-left', !!e.target.checked);
-};
+$('#pin-sidebar').onchange = e => localStorageSet('pin-sidebar', !!e.target.checked);
+$('#joined-left').onchange = e => localStorageSet('joined-left', !!e.target.checked);
 
 // User list
 
@@ -421,7 +422,7 @@ function usersClear() {
 }
 
 function userInvite(nick) {
-	send({ cmd: 'invite', nick: nick });
+	send({ cmd: 'invite', nick });
 }
 
 function userIgnore(nick) {
