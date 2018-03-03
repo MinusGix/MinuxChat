@@ -52,9 +52,7 @@ let lastSentPos = 0;
 
 
 // Ping server every 50 seconds to retain WebSocket connection
-window.setInterval(function() {
-	send({ cmd: 'ping' });
-}, 50000);
+window.setInterval(_ => send({ cmd: 'ping' }), 50000);
 
 
 function join(channel) {
@@ -68,7 +66,7 @@ function join(channel) {
 
 	let wasConnected = false;
 
-	ws.onopen = function() {
+	ws.onopen = _ => {
 		if (!wasConnected) {
 			if (location.hash) {
 				myNick = location.hash.substr(1);
@@ -83,16 +81,14 @@ function join(channel) {
 		wasConnected = true;
 	};
 
-	ws.onclose = function() {
+	ws.onclose = _ => {
 		if (wasConnected) {
 			pushMessage({ nick: '!', text: "Server disconnected. Attempting to reconnect..." });
 		}
-		window.setTimeout(function() {
-			join(channel);
-		}, 2000);
+		window.setTimeout(_ => join(channel), 2000);
 	};
 
-	ws.onmessage = function(message) {
+	ws.onmessage = message => {
 		let args = JSON.parse(message.data);
 		let cmd = args.cmd;
 		let command = COMMANDS[cmd];
@@ -102,36 +98,34 @@ function join(channel) {
 
 
 let COMMANDS = {
-	chat: function(args) {
+	chat: args => {
 		if (ignoredUsers.indexOf(args.nick) >= 0) {
 			return;
 		}
 		pushMessage(args);
 	},
-	info: function(args) {
+	info: args => {
 		args.nick = '*';
 		pushMessage(args);
 	},
-	warn: function(args) {
+	warn: args => {
 		args.nick = '!';
 		pushMessage(args);
 	},
-	onlineSet: function(args) {
+	onlineSet: args => {
 		let nicks = args.nicks;
 		usersClear();
-		nicks.forEach(function(nick) {
-			userAdd(nick);
-		});
+		nicks.forEach(nick =>userAdd(nick));
 		pushMessage({ nick: '*', text: "Users online: " + nicks.join(", ") });
 	},
-	onlineAdd: function(args) {
+	onlineAdd: args => {
 		let nick = args.nick;
 		userAdd(nick);
 		if ($('#joined-left').checked) {
 			pushMessage({ nick: '*', text: nick + " joined" });
 		}
 	},
-	onlineRemove: function(args) {
+	onlineRemove: args => {
 		let nick = args.nick;
 		userRemove(nick);
 		if ($('#joined-left').checked) {
@@ -235,16 +229,14 @@ function parseLinks(g0) {
 let windowActive = true;
 let unread = 0;
 
-window.onfocus = function() {
+window.onfocus = _ => {
 	windowActive = true;
 	updateTitle();
 };
 
-window.onblur = function() {
-	windowActive = false;
-};
+window.onblur = _ => windowActive = false;
 
-window.onscroll = function() {
+window.onscroll = _ => {
 	if (isAtBottom()) {
 		updateTitle();
 	}
@@ -274,11 +266,9 @@ function updateTitle() {
 
 /* footer */
 
-$('#footer').onclick = function() {
-	$('#chatinput').focus();
-};
+$('#footer').onclick = _ => $('#chatinput').focus();
 
-$('#chatinput').onkeydown = function(e) {
+$('#chatinput').onkeydown = e => {
 	if (e.keyCode == 13 /* ENTER */ && !e.shiftKey) {
 		e.preventDefault();
 		// Submit message
@@ -327,9 +317,7 @@ $('#chatinput').onkeydown = function(e) {
 		if (index >= 0) {
 			let stub = text.substring(index + 1, pos).toLowerCase();
 			// Search for nick beginning with stub
-			let nicks = onlineUsers.filter(function(nick) {
-				return nick.toLowerCase().indexOf(stub) === 0;
-			});
+			let nicks = onlineUsers.filter(nick => nick.toLowerCase().indexOf(stub) === 0);
 			if (nicks.length == 1) {
 				insertAtCursor(nicks[0].substr(stub.length) + " ");
 			}
@@ -351,27 +339,25 @@ function updateInputSize() {
 	}
 }
 
-$('#chatinput').oninput = function() {
-	updateInputSize();
-};
+$('#chatinput').oninput = _ => updateInputSize();
 
 updateInputSize();
 
 
 /* sidebar */
 
-$('#sidebar').onmouseenter = $('#sidebar').ontouchstart = function(e) {
+$('#sidebar').onmouseenter = $('#sidebar').ontouchstart = e => {
 	$('#sidebar-content').classList.remove('hidden');
 	e.stopPropagation();
 };
 
-$('#sidebar').onmouseleave = document.ontouchstart = function() {
+$('#sidebar').onmouseleave = document.ontouchstart = _ => {
 	if (!$('#pin-sidebar').checked) {
 		$('#sidebar-content').classList.add('hidden');
 	}
 };
 
-$('#clear-messages').onclick = function() {
+$('#clear-messages').onclick = _ => {
 	// Delete children elements
 	let messages = $('#messages');
 	while (messages.firstChild) {
@@ -404,9 +390,7 @@ let ignoredUsers = [];
 function userAdd(nick) {
 	let user = document.createElement('a');
 	user.textContent = nick;
-	user.onclick = function(e) {
-		userInvite(nick);
-	};
+	user.onclick = e => userInvite(nick);
 	let userLi = document.createElement('li');
 	userLi.appendChild(user);
 	$('#users').appendChild(userLi);
@@ -477,16 +461,14 @@ function setScheme(scheme) {
 }
 
 // Add scheme options to dropdown selector
-schemes.forEach(function(scheme) {
+schemes.forEach(scheme => {
 	let option = document.createElement('option');
 	option.textContent = scheme;
 	option.value = scheme;
 	$('#scheme-selector').appendChild(option);
 });
 
-$('#scheme-selector').onchange = function(e) {
-	setScheme(e.target.value);
-};
+$('#scheme-selector').onchange = e => setScheme(e.target.value);
 
 // Load sidebar configaration values from local storage if available
 if (localStorageGet('scheme')) {
