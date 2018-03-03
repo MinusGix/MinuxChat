@@ -54,7 +54,7 @@ server.on('connection', function(socket) {
 			if (COMMANDS.hasOwnProperty(cmd)) {
 				let command = COMMANDS[cmd];
 				if (command && args) {
-					command.call(socket, args);
+					command(socket, args);
 				}
 			}
 		} catch (e) {
@@ -141,22 +141,21 @@ function isMod(client) {
 }
 
 
-// `this` bound to client
 let COMMANDS = {
 	ping: function() {
 		// Don't do anything
 	},
 
-	join: function(args) {
+	join: function(socket, args) {
 		let channel = String(args.channel);
 		let nick = String(args.nick);
 
-		if (POLICE.frisk(getAddress(this), 3)) {
-			send({ cmd: 'warn', text: "You are joining channels too fast. Wait a moment and try again." }, this);
+		if (POLICE.frisk(getAddress(socket), 3)) {
+			send({ cmd: 'warn', text: "You are joining channels too fast. Wait a moment and try again." }, socket);
 			return;
 		}
 
-		if (this.nick) {
+		if (socket.nick) {
 			// Already joined
 			return;
 		}
@@ -173,25 +172,25 @@ let COMMANDS = {
 		nick = nickArr[0].trim();
 
 		if (!nicknameValid(nick)) {
-			send({ cmd: 'warn', text: "Nickname must consist of up to 24 letters, numbers, and underscores" }, this);
+			send({ cmd: 'warn', text: "Nickname must consist of up to 24 letters, numbers, and underscores" }, socket);
 			return;
 		}
 
 		let password = nickArr[1];
 		if (nick.toLowerCase() == config.admin.toLowerCase()) {
 			if (password != config.password) {
-				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, this);
+				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, socket);
 				return;
 			}
 		} else if (password) {
-			this.trip = hash(password);
+			socket.trip = hash(password);
 		}
 
-		let address = getAddress(this);
+		let address = getAddress(socket);
 		for (let client of server.clients) {
 			if (client.channel === channel) {
 				if (client.nick.toLowerCase() === nick.toLowerCase()) {
-					send({ cmd: 'warn', text: "Nickname taken" }, this);
+					send({ cmd: 'warn', text: "Nickname taken" }, socket);
 					return;
 				}
 			}
@@ -201,8 +200,8 @@ let COMMANDS = {
 		broadcast({ cmd: 'onlineAdd', nick }, channel);
 
 		// Formally join channel
-		this.channel = channel;
-		this.nick = nick;
+		socket.channel = channel;
+		socket.nick = nick;
 
 		// Set the online users for new user
 		let nicks = [];
@@ -211,13 +210,13 @@ let COMMANDS = {
 				nicks.push(client.nick);
 			}
 		}
-		send({ cmd: 'onlineSet', nicks }, this);
+		send({ cmd: 'onlineSet', nicks }, socket);
 	},
 
-	chat: function(args) {
+	chat: function(socket, args) {
 		let text = String(args.text);
 
-		if (!this.channel) {
+		if (!socket.channel) {
 			return;
 		}
 		// strip newlines from beginning and end
@@ -229,60 +228,60 @@ let COMMANDS = {
 		}
 
 		let score = text.length / 83 / 4;
-		if (POLICE.frisk(getAddress(this), score)) {
-			send({ cmd: 'warn', text: "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message." }, this);
+		if (POLICE.frisk(getAddress(socket), score)) {
+			send({ cmd: 'warn', text: "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message." }, socket);
 			return;
 		}
 
-		let data = { cmd: 'chat', nick: this.nick, text };
-		if (isAdmin(this)) {
+		let data = { cmd: 'chat', nick: socket.nick, text };
+		if (isAdmin(socket)) {
 			data.admin = true;
-		} else if (isMod(this)) {
+		} else if (isMod(socket)) {
 			data.mod = true;
 		}
 		
-		if (this.trip) {
-			data.trip = this.trip;
+		if (socket.trip) {
+			data.trip = socket.trip;
 		}
 
-		broadcast(data, this.channel);
+		broadcast(data, socket.channel);
 	},
 
-	invite: function(args) {
+	invite: function(socket, args) {
 		let nick = String(args.nick);
-		if (!this.channel) {
+		if (!socket.channel) {
 			return;
 		}
 
-		if (POLICE.frisk(getAddress(this), 2)) {
-			send({ cmd: 'warn', text: "You are sending invites too fast. Wait a moment before trying again." }, this);
+		if (POLICE.frisk(getAddress(socket), 2)) {
+			send({ cmd: 'warn', text: "You are sending invites too fast. Wait a moment before trying again." }, socket);
 			return;
 		}
 
 		let friend;
 		for (let client of server.clients) {
 			// Find friend's client
-			if (client.channel == this.channel && client.nick == nick) {
+			if (client.channel == socket.channel && client.nick == nick) {
 				friend = client;
 				break;
 			}
 		}
 		if (!friend) {
-			send({ cmd: 'warn', text: "Could not find user in channel" }, this);
+			send({ cmd: 'warn', text: "Could not find user in channel" }, socket);
 			return;
 		}
 
-		if (friend === this) {
+		if (friend === socket) {
 			// Ignore silently
 			return;
 		}
 
 		let channel = Math.random().toString(36).substr(2, 8);
-		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, this);
-		send({ cmd: 'info', text: this.nick + " invited you to ?" + channel }, friend);
+		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, socket);
+		send({ cmd: 'info', text: socket.nick + " invited you to ?" + channel }, friend);
 	},
 
-	stats: function(args) {
+	stats: function(socket, args) {
 		let ips = {};
 		let channels = {};
 
@@ -293,59 +292,59 @@ let COMMANDS = {
 			}
 		}
 
-		send({ cmd: 'info', text: Object.keys(ips).length + " unique IPs in " + Object.keys(channels).length + " channels" }, this);
+		send({ cmd: 'info', text: Object.keys(ips).length + " unique IPs in " + Object.keys(channels).length + " channels" }, socket);
 	},
 
 	// Moderator-only commands below this point
 
-	ban: function(args) {
-		if (!isMod(this)) {
+	ban: function(socket, args) {
+		if (!isMod(socket)) {
 			return;
 		}
 
 		let nick = String(args.nick);
-		if (!this.channel) {
+		if (!socket.channel) {
 			return;
 		}
 
 		let badClient = server.clients.filter(function(client) {
-			return client.channel == this.channel && client.nick == nick;
-		}, this)[0];
+			return client.channel == socket.channel && client.nick == nick;
+		}, socket)[0];
 
 		if (!badClient) {
-			send({ cmd: 'warn', text: "Could not find " + nick }, this);
+			send({ cmd: 'warn', text: "Could not find " + nick }, socket);
 			return;
 		}
 
 		if (isMod(badClient)) {
-			send({ cmd: 'warn', text: "Cannot ban moderator" }, this);
+			send({ cmd: 'warn', text: "Cannot ban moderator" }, socket);
 			return;
 		}
 
 		POLICE.arrest(getAddress(badClient));
-		console.log(this.nick + " [" + this.trip + "] banned " + nick + " in " + this.channel);
-		broadcast({ cmd: 'info', text: "Banned " + nick }, this.channel);
+		console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " in " + socket.channel);
+		broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
 	},
 
-	unban: function(args) {
-		if (!isMod(this)) {
+	unban: function(socket, args) {
+		if (!isMod(socket)) {
 			return;
 		}
 
 		let ip = String(args.ip);
-		if (!this.channel) {
+		if (!socket.channel) {
 			return;
 		}
 
 		POLICE.pardon(ip);
-		console.log(this.nick + " [" + this.trip + "] unbanned " + ip + " in " + this.channel);
-		send({ cmd: 'info', text: "Unbanned " + ip }, this);
+		console.log(socket.nick + " [" + socket.trip + "] unbanned " + ip + " in " + socket.channel);
+		send({ cmd: 'info', text: "Unbanned " + ip }, socket);
 	},
 
 	// Admin-only commands below this point
 
-	listUsers: function() {
-		if (!isAdmin(this)) {
+	listUsers: function(socket) {
+		if (!isAdmin(socket)) {
 			return;
 		}
 		let channels = {};
@@ -364,11 +363,11 @@ let COMMANDS = {
 		}
 		let text = server.clients.length + " users online:\n\n";
 		text += lines.join("\n");
-		send({ cmd: 'info', text: text }, this);
+		send({ cmd: 'info', text: text }, socket);
 	},
 
-	broadcast: function(args) {
-		if (!isAdmin(this)) {
+	broadcast: function(socket, args) {
+		if (!isAdmin(socket)) {
 			return;
 		}
 		let text = String(args.text);
