@@ -51,9 +51,11 @@ server.on('connection', function(socket) {
 			}
 			let args = JSON.parse(data);
 			let cmd = args.cmd;
-			let command = COMMANDS[cmd];
-			if (command && args) {
-				command.call(socket, args);
+			if (COMMANDS.hasOwnProperty(cmd)) {
+				let command = COMMANDS[cmd];
+				if (command && args) {
+					command.call(socket, args);
+				}
 			}
 		} catch (e) {
 			// Socket sent malformed JSON or buffer contains invalid JSON
@@ -209,7 +211,7 @@ let COMMANDS = {
 				nicks.push(client.nick);
 			}
 		}
-		send({ cmd: 'onlineSet', nicks: nicks }, this);
+		send({ cmd: 'onlineSet', nicks }, this);
 	},
 
 	chat: function(args) {
@@ -270,7 +272,7 @@ let COMMANDS = {
 			return;
 		}
 
-		if (friend == this) {
+		if (friend === this) {
 			// Ignore silently
 			return;
 		}
