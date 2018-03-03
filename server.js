@@ -82,11 +82,11 @@ function send(data, client) {
 	// Add timestamp to command
 	data.time = Date.now();
 	try {
-		if (client.readyState == ws.OPEN) {
+		if (client.readyState === WebSocket.OPEN) {
 			client.send(JSON.stringify(data));
 		}
 	} catch (e) {
-		// Ignore exceptions thrown by client.send()
+		console.error(e);
 	}
 }
 
@@ -156,17 +156,12 @@ class Command {
 
 let COMMANDS = {
 	ping: new Command(null, _ => _), // Don't do anything
-	join: new Command(null, (socket, args) => {
+	join: new Command((socket, args) => args.channel && args.nick && !socket.nick, (socket, args) => {
 		let channel = String(args.channel);
 		let nick = String(args.nick);
 
 		if (POLICE.frisk(getAddress(socket), 3)) {
 			send({ cmd: 'warn', text: "You are joining channels too fast. Wait a moment and try again." }, socket);
-			return;
-		}
-
-		if (socket.nick) {
-			// Already joined
 			return;
 		}
 
@@ -223,12 +218,9 @@ let COMMANDS = {
 		send({ cmd: 'onlineSet', nicks }, socket);
 	}),
 
-	chat: new Command(null, (socket, args) => {
+	chat: new Command((socket, args) => socket.channel && socket.nick && args.text, (socket, args) => {
 		let text = String(args.text);
 
-		if (!socket.channel) {
-			return;
-		}
 		// strip newlines from beginning and end
 		text = text.replace(/^\s*\n|^\s+$|\n\s*$/g, '');
 		// replace 3+ newlines with just 2 newlines
@@ -257,11 +249,8 @@ let COMMANDS = {
 		broadcast(data, socket.channel);
 	}),
 
-	invite: new Command(null, (socket, args) => {
+	invite: new Command((socket, args) => socket.channel && socket.nick && args.nick, (socket, args) => {
 		let nick = String(args.nick);
-		if (!socket.channel) {
-			return;
-		}
 
 		if (POLICE.frisk(getAddress(socket), 2)) {
 			send({ cmd: 'warn', text: "You are sending invites too fast. Wait a moment before trying again." }, socket);
@@ -307,18 +296,11 @@ let COMMANDS = {
 
 	// Moderator-only commands below this point
 
-	ban: new Command(null, (socket, args) => {
-		if (!isMod(socket)) {
-			return;
-		}
-
+	ban: new Command((socket, args) => isMod(socket) && socket.channel && socket.nick && args.nick, (socket, args) => {
 		let nick = String(args.nick);
-		if (!socket.channel) {
-			return;
-		}
 
 		let badClient = server.clients
-			.filter(client =>  client.channel == socket.channel && client.nick == nick, socket)[0];
+			.filter(client =>  client.channel === socket.channel && client.nick === nick, socket)[0];
 
 		if (!badClient) {
 			send({ cmd: 'warn', text: "Could not find " + nick }, socket);
@@ -335,15 +317,8 @@ let COMMANDS = {
 		broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
 	}),
 
-	unban: new Command(null, (socket, args) => {
-		if (!isMod(socket)) {
-			return;
-		}
-
+	unban: new Command((socket, args) => isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
 		let ip = String(args.ip);
-		if (!socket.channel) {
-			return;
-		}
 
 		POLICE.pardon(ip);
 		console.log(socket.nick + " [" + socket.trip + "] unbanned " + ip + " in " + socket.channel);
@@ -352,10 +327,7 @@ let COMMANDS = {
 
 	// Admin-only commands below this point
 
-	listUsers: new Command(null, socket => {
-		if (!isAdmin(socket)) {
-			return;
-		}
+	listUsers: new Command(isAdmin, socket => {
 		let channels = {};
 		for (let client of server.clients) {
 			if (client.channel) {
@@ -372,10 +344,7 @@ let COMMANDS = {
 		send({ cmd: 'info', text }, socket);
 	}),
 
-	broadcast: new Command(null, (socket, args) => {
-		if (!isAdmin(socket)) {
-			return;
-		}
+	broadcast: new Command((socket, args) => args.text && isAdmin(socket), (socket, args) => {
 		let text = String(args.text);
 		broadcast({ cmd: 'info', text: "Server broadcast: " + text });
 	})
@@ -394,7 +363,7 @@ let POLICE = {
 			let text = fs.readFileSync(filename, 'utf8');
 			ids = text.split(/\r?\n/);
 		} catch (e) {
-			return;
+			return; // don't need console.error, because the file is only created if you want tob an users even after restart
 		}
 
 		for (let id of ids) {
