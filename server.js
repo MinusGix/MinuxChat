@@ -1,6 +1,6 @@
 /* jshint esversion:6 */
 let fs = require('fs');
-let ws = require('ws');
+let WebSocket = require('ws');
 let crypto = require('crypto');
 
 
@@ -21,7 +21,7 @@ config = loadJSON(configFilename);
 fs.watchFile(configFilename, { persistent: false }, _ => config = loadJSON(configFilename));
 
 
-let server = new ws.Server({ host: config.host, port: config.port });
+let server = new WebSocket.Server({ host: config.host, port: config.port });
 console.log("Started server on " + config.host + ":" + config.port);
 
 server.on('connection', function(socket) {
@@ -49,6 +49,7 @@ server.on('connection', function(socket) {
 			}
 			let args = JSON.parse(data);
 			let cmd = args.cmd;
+			
 			if (COMMANDS.hasOwnProperty(cmd)) {
 				let command = COMMANDS[cmd];
 				if (command && args) {
