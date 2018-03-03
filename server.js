@@ -18,9 +18,7 @@ function loadJSON(filename) {
 
 let configFilename = 'JSON/config.json';
 config = loadJSON(configFilename);
-fs.watchFile(configFilename, { persistent: false }, function() {
-	config = loadJSON(configFilename);
-});
+fs.watchFile(configFilename, { persistent: false }, _ => config = loadJSON(configFilename));
 
 
 let server = new ws.Server({ host: config.host, port: config.port });
@@ -127,13 +125,13 @@ function hash(password) {
 }
 
 function isAdmin(client) {
-	return client.nick == config.admin;
+	return client.nick === config.admin;
 }
 
 function isMod(client) {
 	if (isAdmin(client)) return true;
 	if (config.mods) {
-		if (client.trip && config.mods.indexOf(client.trip) > -1) {
+		if (client.trip && config.mods.includes(client.trip)) {
 			return true;
 		}
 	}
@@ -178,7 +176,7 @@ let COMMANDS = {
 
 		let password = nickArr[1];
 		if (nick.toLowerCase() == config.admin.toLowerCase()) {
-			if (password != config.password) {
+			if (password !== config.password) {
 				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, socket);
 				return;
 			}
@@ -307,9 +305,8 @@ let COMMANDS = {
 			return;
 		}
 
-		let badClient = server.clients.filter(function(client) {
-			return client.channel == socket.channel && client.nick == nick;
-		}, socket)[0];
+		let badClient = server.clients
+			.filter(client =>  client.channel == socket.channel && client.nick == nick, socket)[0];
 
 		if (!badClient) {
 			send({ cmd: 'warn', text: "Could not find " + nick }, socket);
@@ -357,13 +354,10 @@ let COMMANDS = {
 			}
 		}
 
-		let lines = [];
-		for (let channel in channels) {
-			lines.push("?" + channel + " " + channels[channel].join(", "));
-		}
+		let lines = Object.entries(channels).map(channel => "?" + channel[0] + " " + channel[1].join(', '));
 		let text = server.clients.length + " users online:\n\n";
 		text += lines.join("\n");
-		send({ cmd: 'info', text: text }, socket);
+		send({ cmd: 'info', text }, socket);
 	},
 
 	broadcast: function(socket, args) {
@@ -372,7 +366,7 @@ let COMMANDS = {
 		}
 		let text = String(args.text);
 		broadcast({ cmd: 'info', text: "Server broadcast: " + text });
-	},
+	}
 };
 
 
