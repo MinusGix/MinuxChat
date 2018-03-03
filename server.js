@@ -52,8 +52,8 @@ server.on('connection', function(socket) {
 
 			if (COMMANDS.hasOwnProperty(cmd)) {
 				let command = COMMANDS[cmd];
-				if (command && args) {
-					command(socket, args);
+				if (command instanceof Command && args) {
+					command.run(socket, args);
 				}
 			}
 		} catch (e) {
@@ -139,11 +139,24 @@ function isMod(client) {
 	return false;
 }
 
+class Command {
+	constructor (verify, func) {
+		this.func = func;
+		this.verify = verify || (_ => true);
+	}
+
+	run (socket, args) {
+		if (this.verify(socket, args)) {
+			return this.func(socket, args);
+		}
+		return false;
+	}
+}
+
 
 let COMMANDS = {
-	ping: _ => _, // Don't do anything
-
-	join: (socket, args) => {
+	ping: new Command(null, _ => _), // Don't do anything
+	join: new Command(null, (socket, args) => {
 		let channel = String(args.channel);
 		let nick = String(args.nick);
 
@@ -208,9 +221,9 @@ let COMMANDS = {
 			}
 		}
 		send({ cmd: 'onlineSet', nicks }, socket);
-	},
+	}),
 
-	chat: (socket, args) => {
+	chat: new Command(null, (socket, args) => {
 		let text = String(args.text);
 
 		if (!socket.channel) {
@@ -242,9 +255,9 @@ let COMMANDS = {
 		}
 
 		broadcast(data, socket.channel);
-	},
+	}),
 
-	invite: (socket, args) => {
+	invite: new Command(null, (socket, args) => {
 		let nick = String(args.nick);
 		if (!socket.channel) {
 			return;
@@ -276,9 +289,9 @@ let COMMANDS = {
 		let channel = Math.random().toString(36).substr(2, 8);
 		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, socket);
 		send({ cmd: 'info', text: socket.nick + " invited you to ?" + channel }, friend);
-	},
+	}),
 
-	stats: (socket, args) => {
+	stats: new Command(null, (socket, args) => {
 		let ips = {};
 		let channels = {};
 
@@ -290,11 +303,11 @@ let COMMANDS = {
 		}
 
 		send({ cmd: 'info', text: Object.keys(ips).length + " unique IPs in " + Object.keys(channels).length + " channels" }, socket);
-	},
+	}),
 
 	// Moderator-only commands below this point
 
-	ban: (socket, args) => {
+	ban: new Command(null, (socket, args) => {
 		if (!isMod(socket)) {
 			return;
 		}
@@ -320,9 +333,9 @@ let COMMANDS = {
 		POLICE.arrest(getAddress(badClient));
 		console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " in " + socket.channel);
 		broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
-	},
+	}),
 
-	unban: (socket, args) => {
+	unban: new Command(null, (socket, args) => {
 		if (!isMod(socket)) {
 			return;
 		}
@@ -335,11 +348,11 @@ let COMMANDS = {
 		POLICE.pardon(ip);
 		console.log(socket.nick + " [" + socket.trip + "] unbanned " + ip + " in " + socket.channel);
 		send({ cmd: 'info', text: "Unbanned " + ip }, socket);
-	},
+	}),
 
 	// Admin-only commands below this point
 
-	listUsers: socket => {
+	listUsers: new Command(null, socket => {
 		if (!isAdmin(socket)) {
 			return;
 		}
@@ -357,15 +370,15 @@ let COMMANDS = {
 		let text = server.clients.length + " users online:\n\n";
 		text += lines.join("\n");
 		send({ cmd: 'info', text }, socket);
-	},
+	}),
 
-	broadcast: (socket, args) => {
+	broadcast: new Command(null, (socket, args) => {
 		if (!isAdmin(socket)) {
 			return;
 		}
 		let text = String(args.text);
 		broadcast({ cmd: 'info', text: "Server broadcast: " + text });
-	}
+	})
 };
 
 
