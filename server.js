@@ -33,7 +33,7 @@ server.on('connection', function(socket) {
 		socket.close();
 	};
 
-	socket.on('message', function(data) {
+	socket.on('message', data => {
 		try {
 			// Don't penalize yet, but check whether IP is rate-limited
 			if (POLICE.frisk(getAddress(socket), 0)) {
@@ -49,7 +49,7 @@ server.on('connection', function(socket) {
 			}
 			let args = JSON.parse(data);
 			let cmd = args.cmd;
-			
+
 			if (COMMANDS.hasOwnProperty(cmd)) {
 				let command = COMMANDS[cmd];
 				if (command && args) {
@@ -67,7 +67,7 @@ server.on('connection', function(socket) {
 		}
 	});
 
-	socket.on('close', function() {
+	socket.on('close', _ => {
 		try {
 			if (socket.channel) {
 				broadcast({ cmd: 'onlineRemove', nick: socket.nick }, socket.channel);
@@ -141,11 +141,9 @@ function isMod(client) {
 
 
 let COMMANDS = {
-	ping: function() {
-		// Don't do anything
-	},
+	ping: _ => _, // Don't do anything
 
-	join: function(socket, args) {
+	join: (socket, args) => {
 		let channel = String(args.channel);
 		let nick = String(args.nick);
 
@@ -212,7 +210,7 @@ let COMMANDS = {
 		send({ cmd: 'onlineSet', nicks }, socket);
 	},
 
-	chat: function(socket, args) {
+	chat: (socket, args) => {
 		let text = String(args.text);
 
 		if (!socket.channel) {
@@ -246,7 +244,7 @@ let COMMANDS = {
 		broadcast(data, socket.channel);
 	},
 
-	invite: function(socket, args) {
+	invite: (socket, args) => {
 		let nick = String(args.nick);
 		if (!socket.channel) {
 			return;
@@ -280,7 +278,7 @@ let COMMANDS = {
 		send({ cmd: 'info', text: socket.nick + " invited you to ?" + channel }, friend);
 	},
 
-	stats: function(socket, args) {
+	stats: (socket, args) => {
 		let ips = {};
 		let channels = {};
 
@@ -296,7 +294,7 @@ let COMMANDS = {
 
 	// Moderator-only commands below this point
 
-	ban: function(socket, args) {
+	ban: (socket, args) => {
 		if (!isMod(socket)) {
 			return;
 		}
@@ -324,7 +322,7 @@ let COMMANDS = {
 		broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
 	},
 
-	unban: function(socket, args) {
+	unban: (socket, args) => {
 		if (!isMod(socket)) {
 			return;
 		}
@@ -341,7 +339,7 @@ let COMMANDS = {
 
 	// Admin-only commands below this point
 
-	listUsers: function(socket) {
+	listUsers: socket => {
 		if (!isAdmin(socket)) {
 			return;
 		}
@@ -361,7 +359,7 @@ let COMMANDS = {
 		send({ cmd: 'info', text }, socket);
 	},
 
-	broadcast: function(socket, args) {
+	broadcast: (socket, args) => {
 		if (!isAdmin(socket)) {
 			return;
 		}
