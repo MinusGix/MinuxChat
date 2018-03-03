@@ -5,20 +5,21 @@ let crypto = require('crypto');
 
 
 let config = {};
-function loadConfig(filename) {
+function loadJSON(filename) {
 	try {
 		let data = fs.readFileSync(filename, 'utf8');
-		config = JSON.parse(data);
-		console.log("Loaded config '" + filename + "'");
+		console.log("Loaded JSON '" + filename + "'");
+		return JSON.parse(data);
 	} catch (e) {
 		console.warn(e);
+		return null;
 	}
 }
 
 let configFilename = 'JSON/config.json';
-loadConfig(configFilename);
+config = loadJSON(configFilename);
 fs.watchFile(configFilename, { persistent: false }, function() {
-	loadConfig(configFilename);
+	config = loadJSON(configFilename);
 });
 
 
