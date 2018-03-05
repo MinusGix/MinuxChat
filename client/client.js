@@ -118,7 +118,7 @@ let COMMANDS = {
 			cmd: 'info',
 			text: "You invited " + args.nick + " to ?" + args.channel
 		};
-		pushMessage(args);
+		pushMessage(msg);
 	},
 	invite: args => {
 		let msg = {
@@ -126,7 +126,7 @@ let COMMANDS = {
 			cmd: 'info',
 			text: args.nick + " invited you to ?" + args.channel
 		};
-		pushMessage(args);
+		pushMessage(msg);
 	},
 	stats: args => {
 		let msg = {
