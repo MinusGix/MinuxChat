@@ -346,6 +346,7 @@ let COMMANDS = Server.COMMANDS = {
 			nicks = [nicks];
 		}
 
+		let kicked = [];
 		for (let i = 0; i < nicks.length; i++) {
 			let nick = nicks[i];
 
@@ -361,11 +362,12 @@ let COMMANDS = Server.COMMANDS = {
 				send({ cmd: 'warn', text: 'Cannot kick moderator' });
 				continue;
 			}
-		
+			
+			kicked.push(nick);
 			badClient.channel = Math.random().toString(36).substr(2, 8);
 			Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
 		}
-		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + nicks.join(', ')}, socket.channel);
+		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + kicked.join(', ')}, socket.channel);
 	}).setPenalize(0.1),
 
 	usersWithSameIP: new Command(Server.isMod, (socket, args) => { // does not inform mod of users ip, just that they have the same one
