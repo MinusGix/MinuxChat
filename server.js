@@ -347,7 +347,11 @@ let COMMANDS = Server.COMMANDS = {
 			}
 		}
 
-		send({ cmd: 'info', text: Object.keys(ips).length + " unique IPs in " + Object.keys(channels).length + " channels" }, socket);
+		send({
+			cmd: 'stats',
+			ipCount: Object.keys(ips).length,
+			channelCount: Object.keys(channels).length
+		}, socket);
 	}),
 
 	// Moderator-only commands below this point

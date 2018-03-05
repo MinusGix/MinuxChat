@@ -104,6 +104,14 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	stats: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: args.ipCount + " unique IPs in " + args.channelCount + " channels"
+		};
+		pushMessage(msg);
+	},
 	kick: args => {
 		let msg = {
 			nick: '*',
