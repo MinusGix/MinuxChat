@@ -76,7 +76,7 @@ function join(channel) {
 		}
 		if (myNick) {
 			localStorageSet('my-nick', myNick);
-			send({ cmd: 'join', channel: channel, nick: myNick });
+			send({ cmd: 'join', channel: channel, nick: myNick.split('#')[0], pass: myNick.split('#')[1] });
 		}
 		wasConnected = true;
 	};

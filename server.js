@@ -203,7 +203,8 @@ let COMMANDS = Server.COMMANDS = {
 
 	join: new Command((socket, args) => args.channel && args.nick && !socket.nick, (socket, args) => {
 		let channel = String(args.channel);
-		let nick = String(args.nick);
+		let nick = String(args.nick).trim();
+		let password = String(args.pass || '');
 
 		// Process channel name
 		channel = channel.trim();
@@ -212,16 +213,11 @@ let COMMANDS = Server.COMMANDS = {
 			return;
 		}
 
-		// Process nickname
-		let nickArr = nick.split('#', 2);
-		nick = nickArr[0].trim();
-
 		if (!Server.nicknameValid(nick)) {
 			send({ cmd: 'warn', text: "Nickname must consist of up to 24 letters, numbers, and underscores" }, socket);
 			return;
 		}
 
-		let password = nickArr[1];
 		if (nick.toLowerCase() === Server.Config.admin.toLowerCase()) {
 			if (password !== Server.Config.password) {
 				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, socket);
