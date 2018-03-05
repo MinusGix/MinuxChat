@@ -318,25 +318,38 @@ let COMMANDS = Server.COMMANDS = {
 
 	// Moderator-only commands below this point
 
-	ban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.nick, (socket, args) => {
-		let nick = String(args.nick);
+	ban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && (args.nick || args.nicks), (socket, args) => {
+		let nicks = args.nick || args.nicks;
 
-		let badClient = Server.websocket.clients
-			.filter(client =>  client.channel === socket.channel && client.nick === nick, socket)[0];
-
-		if (!badClient) {
-			send({ cmd: 'warn', text: "Could not find " + nick }, socket);
-			return;
+		if (!Array.isArray(nicks)) {
+			nicks = [nicks];
 		}
 
-		if (Server.isMod(badClient)) {
-			send({ cmd: 'warn', text: "Cannot ban moderator" }, socket);
-			return;
-		}
+		let clientsInChannel = Server.websocket.clients
+			.filter(client => client.channel === socket.channel);
+		let banned = [];
 
-		POLICE.arrest(Server.getAddress(badClient));
-		console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " in " + socket.channel);
-		Server.broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
+		for (let i = 0; i < nicks.length; i++) {
+			let nick = nicks[i];
+
+			let badClient = clientsInChannel
+				.filter(client => client.nick === nick)[0];
+
+			if (!badClient) {
+				send({ cmd: 'warn', text: "Could not find " + nick }, socket);
+				return;
+			}
+
+			if (Server.isMod(badClient)) {
+				send({ cmd: 'warn', text: "Cannot ban moderator" }, socket);
+				return;
+			}
+
+			banned.push(nick);
+			POLICE.arrest(Server.getAddress(badClient));
+			console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " [" + badClient.trip + "] in " + socket.channel);
+		}
+		Server.broadcast({ cmd: 'info', text: "Banned " + banned.join(', ') }, socket.channel);
 	}).setPenalize(0.1), // very minute amount on the ban
 
 	unban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
