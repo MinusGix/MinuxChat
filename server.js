@@ -319,7 +319,7 @@ let COMMANDS = Server.COMMANDS = {
 	// Moderator-only commands below this point
 
 	ban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && (args.nick || args.nicks), (socket, args) => {
-		let nicks = args.nick || args.nicks;
+		let nicks = String(args.nick || '') || args.nicks;
 
 		if (!Array.isArray(nicks)) {
 			nicks = [nicks];
@@ -353,7 +353,7 @@ let COMMANDS = Server.COMMANDS = {
 	}).setPenalize(0.1), // very minute amount on the ban
 
 	unban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
-		let ip = String(args.ip);
+		let ips = String(args.ip);
 
 		POLICE.pardon(ip);
 		console.log(socket.nick + " [" + socket.trip + "] unbanned " + ip + " in " + socket.channel);
