@@ -3,8 +3,6 @@ let fs = require('fs');
 let WebSocket = require('ws');
 let crypto = require('crypto');
 
-
-let config = {};
 function loadJSON(filename) {
 	try {
 		let data = fs.readFileSync(filename, 'utf8');
@@ -16,13 +14,16 @@ function loadJSON(filename) {
 	}
 }
 
-let configFilename = 'JSON/config.json';
-config = loadJSON(configFilename);
-fs.watchFile(configFilename, { persistent: false }, _ => config = loadJSON(configFilename));
+let Server = {
+	configFilename: "JSON/config.json"
+};
+Server.Config = loadJSON(Server.configFilename);
+
+fs.watchFile(Server.configFilename, { persistent: false }, _ => Server.Config = loadJSON(Server.configFilename));
 
 
-let server = new WebSocket.Server({ host: config.host, port: config.port });
-console.log("Started server on " + config.host + ":" + config.port);
+let server = new WebSocket.Server({ host: Server.Config.host, port: Server.Config.port });
+console.log("Started server on " + Server.Config.host + ":" + Server.Config.port);
 
 server.on('connection', socket => {
 	// Socket receiver has crashed, flush and kill socket
@@ -105,7 +106,7 @@ function nicknameValid(nick) {
 }
 
 function getAddress(client) {
-	if (config.x_forwarded_for) {
+	if (Server.Config.x_forwarded_for) {
 		// The remoteAddress is 127.0.0.1 since if all connections
 		// originate from a proxy (e.g. nginx).
 		// You must write the x-forwarded-for header to determine the
@@ -119,18 +120,18 @@ function getAddress(client) {
 
 function hash(password) {
 	let sha = crypto.createHash('sha256');
-	sha.update(password + config.salt);
+	sha.update(password + Server.Config.salt);
 	return sha.digest('base64').substr(0, 6);
 }
 
 function isAdmin(client) {
-	return client.nick === config.admin;
+	return client.nick === Server.Config.admin;
 }
 
 function isMod(client) {
 	if (isAdmin(client)) return true;
-	if (config.mods) {
-		if (client.trip && config.mods.includes(client.trip)) {
+	if (Server.Config.mods) {
+		if (client.trip && Server.Config.mods.includes(client.trip)) {
 			return true;
 		}
 	}
@@ -217,8 +218,8 @@ let COMMANDS = {
 		}
 
 		let password = nickArr[1];
-		if (nick.toLowerCase() == config.admin.toLowerCase()) {
-			if (password !== config.password) {
+		if (nick.toLowerCase() == Server.Config.admin.toLowerCase()) {
+			if (password !== Server.Config.password) {
 				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, socket);
 				return;
 			}
