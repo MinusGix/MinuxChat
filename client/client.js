@@ -104,6 +104,14 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	ban: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: (args.banner || '') + ' Banned ' + args.nicks.join(', ')
+		};
+		pushMessage(msg);
+	},
 	usersWithSameIP: args => {
 		let msg = {
 			nick: '*',
