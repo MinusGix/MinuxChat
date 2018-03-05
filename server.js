@@ -369,7 +369,7 @@ let COMMANDS = Server.COMMANDS = {
 		}
 		Server.broadcast({ 
 			cmd: 'info', 
-			text: "Banned " + banned.join(', ') + (anon ? '' : 'by ' + socket.nick + (socket.trip ? '#' + socket.trip : '')) 
+			text: "Banned " + banned.join(', ') + (anon ? '' : ' by ' + socket.nick + (socket.trip ? '#' + socket.trip : '')) 
 		}, socket.channel);
 	}).setPenalize(Server.Config.commands.ban.penalize), // very minute amount on the ban
 
