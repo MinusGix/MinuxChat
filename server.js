@@ -30,6 +30,7 @@ let Server = {
 	broadcast: function (data, channel) {
 		for (let client of Server.websocket.clients) {
 			if (channel ? client.channel === channel : client.channel) {
+				console.log(client.nick);
 				send(data, client);
 			}
 		}
@@ -71,13 +72,15 @@ let Server = {
 	},
 
 	isAdminPair: function (nick, trip) {
-		let admins = Server.Config.admins;
-		for (let i = 0; i < admins.length; i++) {
-			if (nick.toLowerCase() === admins[i][0].toLowerCase()) {
-				if (trip === admins[i][1]) {
-					return true;
+		if (nick) {
+			let admins = Server.Config.admins;
+			for (let i = 0; i < admins.length; i++) {
+				if (nick.toLowerCase() === admins[i][0].toLowerCase()) {
+					if (trip === admins[i][1]) {
+						return true;
+					}
+					return false;
 				}
-				return false;
 			}
 		}
 		return false;
@@ -334,6 +337,24 @@ let COMMANDS = Server.COMMANDS = {
 	}),
 
 	// Moderator-only commands below this point
+
+	kick: new Command((socket, args) => Server.isMod(socket) && args.nick, (socket, args) => {
+		let nick = String(args.nick);
+		let badClient = Server.websocket.clients
+			.filter(client => client.channel === socket.channel && client.nick === nick)[0];
+
+		if (!badClient) {
+			return send({ cmd: 'warn', text: 'Could not find ' + nick }, socket);
+		}
+
+		if (Server.isMod(badClient)) {
+			return send({ cmd: 'warn', text: 'Cannot kick moderator' });
+		}
+		
+		badClient.channel = Math.random().toString(36).substr(2, 8);
+		Server.broadcast({ cmd: 'info', text: 'Kicked ' + nick}, socket.channel);
+		Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
+	}).setPenalize(0.1),
 
 	usersWithSameIP: new Command(Server.isMod, (socket, args) => { // does not inform mod of users ip, just that they have the same one
 		let users = {};
