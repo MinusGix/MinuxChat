@@ -104,6 +104,14 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	kick: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: (args.kicker || '') + ' Kicked ' + args.nicks.join(', ')
+		};
+		pushMessage(msg);
+	},
 	info: args => {
 		args.nick = '*';
 		pushMessage(args);

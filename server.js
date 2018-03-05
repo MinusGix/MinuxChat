@@ -389,23 +389,27 @@ let COMMANDS = Server.COMMANDS = {
 			console.log(socket.nick + " [" + socket.trip + "] kicked " + nick + " [" + badClient.trip + "] in " + socket.channel + " to " + channel);
 		}
 
-		for (let i = 0; i < nicks.length; i++) {
-			// this needs to be in a separate loop, otherwise the other kicked users will see other users leaving
-			// which might tip off a person spamming with multiple users.
-			Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
-		}
-
-		let text = 'Kicked ' + kicked.join(', ');
-
-		if (!anon) {
-			text = ' ' + text;
-			if (socket.trip) {
-				text = '#' + socket.trip + text;
+		if (kicked.length !== 0) {
+			for (let i = 0; i < kicked.length; i++) {
+				// this needs to be in a separate loop, otherwise the other kicked users will see other users leaving
+				// which might tip off a person spamming with multiple users.
+				Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
 			}
-			text = socket.nick + text;
+		
+			let kicker;
+			if (!anon) {
+				kicker = socket.nick;
+				if (socket.trip) {
+					kicker += socket.trip;
+				}
+			}
+		
+			Server.broadcast({ 
+				cmd: 'kick', 
+				kicker,
+				nicks: kicked 
+			}, socket.channel);
 		}
-
-		Server.broadcast({ cmd: 'info', text }, socket.channel);
 	})
 	.setPenalize(0.1),
 
