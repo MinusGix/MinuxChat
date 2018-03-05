@@ -480,7 +480,7 @@ let COMMANDS = Server.COMMANDS = {
 		let text = String(args.text);
 		let anon = Boolean(args.anon);
 
-		Server.broadcast({ cmd: 'info', text: "Server broadcast " (anon ? '' : 'by ' + socket.nick) + ': ' + text });
+		Server.broadcast({ cmd: 'info', text: "Server broadcast " + (anon ? '' : 'by ' + socket.nick) + ': ' + text });
 	})
 };
 
