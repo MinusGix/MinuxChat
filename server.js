@@ -414,7 +414,9 @@ let COMMANDS = Server.COMMANDS = {
 
 	broadcast: new Command((socket, args) => args.text && Server.isAdmin(socket), (socket, args) => {
 		let text = String(args.text);
-		Server.broadcast({ cmd: 'info', text: "Server broadcast: " + text });
+		let anon = Boolean(args.anon);
+
+		Server.broadcast({ cmd: 'info', text: "Server broadcast " (anon ? '' : 'by ' + socket.nick) + ': ' + text });
 	})
 };
 
