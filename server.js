@@ -165,7 +165,7 @@ Server.websocket.on('connection', socket => {
 
 class Command {
 	constructor (verify, func) {
-		this.func = func;
+		this.func = func || (_=>_);
 		this.verify = verify || (_ => true);
 
 		this.settings = {
@@ -192,6 +192,11 @@ class Command {
 		return getValue(this.settings.onPenalized, socket, args);
 	}
 
+	setVerify (func) {
+		this.verify = func;
+		return this;
+	}
+
 	setCommandFunction (func) { // for if they want to set the command later
 		this.func = func;
 		return this;
@@ -214,9 +219,11 @@ class Command {
 
 
 let COMMANDS = Server.COMMANDS = {
-	ping: new Command(null, _ => _).setPenalize(_ => Server.Config.commands.ping.penalize), // Don't do anything
+	ping: new Command().setPenalize(_ => Server.Config.commands.ping.penalize), // Don't do anything
 
-	join: new Command((socket, args) => args.channel && args.nick && !socket.nick, (socket, args) => {
+	join: new Command()
+	.setVerify((socket, args) => args.channel && args.nick && !socket.nick)
+	.setCommandFunction((socket, args) => {
 		let channel = String(args.channel);
 		let nick = String(args.nick).trim();
 		let password = String(args.pass || '');
@@ -270,10 +277,13 @@ let COMMANDS = Server.COMMANDS = {
 			.map(client => client.nick);
 		
 		send({ cmd: 'onlineSet', nicks }, socket);
-	}).setPenalize(_ => Server.Config.commands.join.penalize)
+	})
+	.setPenalize(_ => Server.Config.commands.join.penalize)
 	.setOnPenalized(_ => Server.Config.commands.join.onPenalized),
 
-	chat: new Command((socket, args) => socket.channel && socket.nick && args.text, (socket, args) => {
+	chat: new Command()
+	.setVerify((socket, args) => socket.channel && socket.nick && args.text)
+	.setCommandFunction((socket, args) => {
 		let text = args.modifiedText; // modified in the setPenalize.
 
 		let data = { cmd: 'chat', nick: socket.nick, text };
@@ -288,14 +298,17 @@ let COMMANDS = Server.COMMANDS = {
 		}
 
 		Server.broadcast(data, socket.channel);
-	}).setPenalize((socket, args) => {
+	})
+	.setPenalize((socket, args) => {
 		args.modifiedText = String(args.text)
 			.replace(/^\s*\n|^\s+$|\n\s*$/g, '') // strip newlines from beginning and end
 			.replace(/\n{3,}/g, "\n\n"); // replace 3+ newlines with just 2 newlines
 		return (args.modifiedText.length / 83 / 4) + 1;
 	}).setOnPenalized(_ => Server.Config.commands.chat.onPenalized),
 
-	invite: new Command((socket, args) => socket.channel && socket.nick && args.nick, (socket, args) => {
+	invite: new Command()
+	.setVerify((socket, args) => socket.channel && socket.nick && args.nick)
+	.setCommandFunction((socket, args) => {
 		let nick = String(args.nick);
 		let channel = String(args.channel || '') || Math.random().toString(36).substr(2, 8);
 
@@ -319,10 +332,12 @@ let COMMANDS = Server.COMMANDS = {
 
 		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, socket);
 		send({ cmd: 'info', text: socket.nick + " invited you to ?" + channel }, friend);
-	}).setPenalize(_ => Server.Config.commands.invite.penalize)
+	})
+	.setPenalize(_ => Server.Config.commands.invite.penalize)
 	.setOnPenalized(_ => Server.Config.commands.invite.onPenalized),
 
-	stats: new Command(null, (socket, args) => {
+	stats: new Command()
+	.setCommandFunction((socket, args) => {
 		let ips = {};
 		let channels = {};
 
@@ -338,7 +353,9 @@ let COMMANDS = Server.COMMANDS = {
 
 	// Moderator-only commands below this point
 
-	kick: new Command((socket, args) => Server.isMod(socket) && (args.nick || args.nicks), (socket, args) => {
+	kick: new Command()
+	.setVerify((socket, args) => Server.isMod(socket) && (args.nick || args.nicks))
+	.setCommandFunction((socket, args) => {
 		let nicks = String(args.nick || '') || args.nicks;
 		let anon = Boolean(args.anon);
 
@@ -372,9 +389,12 @@ let COMMANDS = Server.COMMANDS = {
 			console.log(socket.nick + " [" + socket.trip + "] kicked " + nick + " [" + badClient.trip + "] in " + socket.channel + " to " + badClient.channel);
 		}
 		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + kicked.join(', ')}, socket.channel);
-	}).setPenalize(0.1),
+	})
+	.setPenalize(0.1),
 
-	usersWithSameIP: new Command(Server.isMod, (socket, args) => { // does not inform mod of users ip, just that they have the same one
+	usersWithSameIP: new Command()
+	.setVerify(Server.isMod)
+	.setCommandFunction((socket, args) => { // does not inform mod of users ip, just that they have the same one
 		let users = {};
 
 		Server.websocket.clients.forEach(client => {
@@ -395,7 +415,9 @@ let COMMANDS = Server.COMMANDS = {
 		send({ cmd: 'info', text }, socket);
 	}),
 
-	ban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && (args.nick || args.nicks), (socket, args) => {
+	ban: new Command()
+	.setVerify((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && (args.nick || args.nicks))
+	.setCommandFunction((socket, args) => {
 		let nicks = String(args.nick || '') || args.nicks;
 		let anon = Boolean(args.anon);
 
@@ -431,9 +453,12 @@ let COMMANDS = Server.COMMANDS = {
 			cmd: 'info', 
 			text: "Banned " + banned.join(', ') + (anon ? '' : ' by ' + socket.nick + (socket.trip ? '#' + socket.trip : '')) 
 		}, socket.channel);
-	}).setPenalize(Server.Config.commands.ban.penalize), // very minute amount on the ban
+	})
+	.setPenalize(Server.Config.commands.ban.penalize), // very minute amount on the ban
 
-	unban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
+	unban: new Command()
+	.setVerify((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip)
+	.setCommandFunction((socket, args) => {
 		let ips = String(args.ip || '') || args.ips;
 
 		if (!Array.isArray(ips)) {
@@ -447,7 +472,9 @@ let COMMANDS = Server.COMMANDS = {
 		send({ cmd: 'info', text: "Unbanned " + ips.join(', ') }, socket);
 	}),
 
-	listUsersInChannel: new Command((socket, args) => Server.isMod(socket) && args.channel, (socket, args) => {
+	listUsersInChannel: new Command()
+	.setVerify((socket, args) => Server.isMod(socket) && args.channel)
+	.setCommandFunction((socket, args) => {
 		let channel = String(args.channel);
 
 		let users = Server.websocket.clients
@@ -459,7 +486,9 @@ let COMMANDS = Server.COMMANDS = {
 
 	// Admin-only commands below this point
 
-	listUsers: new Command(Server.isAdmin, socket => {
+	listUsers: new Command()
+	.setVerify(Server.isAdmin)
+	.setCommandFunction(socket => {
 		let channels = {};
 		for (let client of Server.websocket.clients) {
 			if (client.channel) {
@@ -476,7 +505,9 @@ let COMMANDS = Server.COMMANDS = {
 		send({ cmd: 'info', text }, socket);
 	}),
 
-	broadcast: new Command((socket, args) => args.text && Server.isAdmin(socket), (socket, args) => {
+	broadcast: new Command()
+	.setVerify((socket, args) => args.text && Server.isAdmin(socket))
+	.setCommandFunction((socket, args) => {
 		let text = String(args.text);
 		let anon = Boolean(args.anon);
 
