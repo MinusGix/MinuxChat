@@ -346,12 +346,15 @@ let COMMANDS = Server.COMMANDS = {
 			nicks = [nicks];
 		}
 
+		let clientsInChannel = Server.websocket.clients
+			.filter(client => client.channel === socket.channel);
 		let kicked = [];
+
 		for (let i = 0; i < nicks.length; i++) {
 			let nick = nicks[i];
 
-			let badClient = Server.websocket.clients
-				.filter(client => client.channel === socket.channel && client.nick === nick)[0];
+			let badClient = clientsInChannel
+				.filter(client => client.nick === nick)[0];
 
 			if (!badClient) {
 				send({ cmd: 'warn', text: 'Could not find ' + nick }, socket);
