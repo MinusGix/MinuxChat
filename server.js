@@ -388,7 +388,7 @@ let COMMANDS = Server.COMMANDS = {
 
 		let users = Server.websocket.clients
 			.filter(client => client.channel === channel)
-			.map(client => client.nick);
+			.map(client => client.nick + (client.trip ? '#' + client.trip : ''));
 
 		send({ cmd: 'info', text: 'Users online in ?' + channel + ' :\n' + (users.join(', ') || 'There is a sound of the void, no souls live in this dread realm.')}, socket);
 	}),
@@ -402,7 +402,7 @@ let COMMANDS = Server.COMMANDS = {
 				if (!channels[client.channel]) {
 					channels[client.channel] = [];
 				}
-				channels[client.channel].push(client.nick);
+				channels[client.channel].push(client.nick + (client.trip ? '#' + client.trip : ''));
 			}
 		}
 
