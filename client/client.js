@@ -104,6 +104,14 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	listUsersInChannel: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: 'Users online in ?' + args.channel + ' :\n' + (args.users.join(', ') || 'There is a sound of the void, no souls live in this dread realm.')
+		};
+		pushMessage(msg);
+	},
 	unban: args => {
 		let msg = {
 			nick: '*',
