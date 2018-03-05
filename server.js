@@ -278,6 +278,7 @@ let COMMANDS = Server.COMMANDS = {
 
 	invite: new Command((socket, args) => socket.channel && socket.nick && args.nick, (socket, args) => {
 		let nick = String(args.nick);
+		let channel = String(args.channel || '') || Math.random().toString(36).substr(2, 8);
 
 		let friend;
 		for (let client of Server.websocket.clients) {
@@ -297,7 +298,6 @@ let COMMANDS = Server.COMMANDS = {
 			return;
 		}
 
-		let channel = Math.random().toString(36).substr(2, 8);
 		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, socket);
 		send({ cmd: 'info', text: socket.nick + " invited you to ?" + channel }, friend);
 	}).setPenalize(2).setOnPenalized("You are sending invites too fast. Wait a moment before trying again."),
