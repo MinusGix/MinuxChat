@@ -369,6 +369,7 @@ let COMMANDS = Server.COMMANDS = {
 			kicked.push(nick);
 			badClient.channel = Math.random().toString(36).substr(2, 8);
 			Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
+			console.log(socket.nick + " [" + socket.trip + "] kicked " + nick + " [" + badClient.trip + "] in " + socket.channel + " to " + badClient.channel);
 		}
 		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + kicked.join(', ')}, socket.channel);
 	}).setPenalize(0.1),
