@@ -22,10 +22,10 @@ Server.Config = loadJSON(Server.configFilename);
 fs.watchFile(Server.configFilename, { persistent: false }, _ => Server.Config = loadJSON(Server.configFilename));
 
 
-let server = new WebSocket.Server({ host: Server.Config.host, port: Server.Config.port });
+Server.websocket = new WebSocket.Server({ host: Server.Config.host, port: Server.Config.port });
 console.log("Started server on " + Server.Config.host + ":" + Server.Config.port);
 
-server.on('connection', socket => {
+Server.websocket.on('connection', socket => {
 	// Socket receiver has crashed, flush and kill socket
 	socket._receiver.onerror = error => {
 		socket._receiver.flush();
@@ -93,7 +93,7 @@ function send(data, client) {
 channel: if not null, restricts broadcast to clients in the channel
 */
 function broadcast(data, channel) {
-	for (let client of server.clients) {
+	for (let client of Server.websocket.clients) {
 		if (channel ? client.channel === channel : client.channel) {
 			send(data, client);
 		}
@@ -228,7 +228,7 @@ let COMMANDS = {
 		}
 
 		let address = getAddress(socket);
-		for (let client of server.clients) {
+		for (let client of Server.websocket.clients) {
 			if (client.channel === channel) {
 				if (client.nick.toLowerCase() === nick.toLowerCase()) {
 					send({ cmd: 'warn', text: "Nickname taken" }, socket);
@@ -246,7 +246,7 @@ let COMMANDS = {
 
 		// Set the online users for new user
 		let nicks = [];
-		for (let client of server.clients) {
+		for (let client of Server.websocket.clients) {
 			if (client.channel === channel) {
 				nicks.push(client.nick);
 			}
@@ -280,7 +280,7 @@ let COMMANDS = {
 		let nick = String(args.nick);
 
 		let friend;
-		for (let client of server.clients) {
+		for (let client of Server.websocket.clients) {
 			// Find friend's client
 			if (client.channel == socket.channel && client.nick == nick) {
 				friend = client;
@@ -306,7 +306,7 @@ let COMMANDS = {
 		let ips = {};
 		let channels = {};
 
-		for (let client of server.clients) {
+		for (let client of Server.websocket.clients) {
 			if (client.channel) {
 				channels[client.channel] = true;
 				ips[getAddress(client)] = true;
@@ -321,7 +321,7 @@ let COMMANDS = {
 	ban: new Command((socket, args) => isMod(socket) && socket.channel && socket.nick && args.nick, (socket, args) => {
 		let nick = String(args.nick);
 
-		let badClient = server.clients
+		let badClient = Server.websocket.clients
 			.filter(client =>  client.channel === socket.channel && client.nick === nick, socket)[0];
 
 		if (!badClient) {
@@ -351,7 +351,7 @@ let COMMANDS = {
 
 	listUsers: new Command(isAdmin, socket => {
 		let channels = {};
-		for (let client of server.clients) {
+		for (let client of Server.websocket.clients) {
 			if (client.channel) {
 				if (!channels[client.channel]) {
 					channels[client.channel] = [];
@@ -361,7 +361,7 @@ let COMMANDS = {
 		}
 
 		let lines = Object.entries(channels).map(channel => "?" + channel[0] + " " + channel[1].join(', '));
-		let text = server.clients.length + " users online:\n\n";
+		let text = Server.websocket.clients.length + " users online:\n\n";
 		text += lines.join("\n");
 		send({ cmd: 'info', text }, socket);
 	}),
