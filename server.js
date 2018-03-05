@@ -335,6 +335,27 @@ let COMMANDS = Server.COMMANDS = {
 
 	// Moderator-only commands below this point
 
+	usersWithSameIP: new Command(Server.isMod, (socket, args) => { // does not inform mod of users ip, just that they have the same one
+		let users = {};
+
+		Server.websocket.clients.forEach(client => {
+			let address = Server.getAddress(client);
+			if (!users[address]) {
+				users[address] = [];
+			}
+			users[address].push(client.nick + (client.trip ? '#' + client.trip : ''));
+		});
+
+		let text = "User's with same ips:\n";
+		for (let address in users) {
+			if (users[address].length > 1) {
+				text += '* Same: ' + users[address].join(', ') + '\n';
+			}
+		}
+
+		send({ cmd: 'info', text }, socket);
+	}),
+
 	ban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && (args.nick || args.nicks), (socket, args) => {
 		let nicks = String(args.nick || '') || args.nicks;
 		let anon = Boolean(args.anon);
