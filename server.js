@@ -263,12 +263,10 @@ let COMMANDS = Server.COMMANDS = {
 		socket.nick = nick;
 
 		// Set the online users for new user
-		let nicks = [];
-		for (let client of Server.websocket.clients) {
-			if (client.channel === channel) {
-				nicks.push(client.nick);
-			}
-		}
+		let nicks = Server.websocket.clients
+			.filter(client => client.channel === channel)
+			.map(client => client.nick);
+		
 		send({ cmd: 'onlineSet', nicks }, socket);
 	}).setPenalize(3).setOnPenalized("You are joining channels too fast. Wait a moment and try again."),
 
