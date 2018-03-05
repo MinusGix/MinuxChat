@@ -1,0 +1,13 @@
+Server:
+	Add Silent Ban
+		- The banned message will say "Silently Banned n"
+		- They will not see a banned message
+		- They will see everyone's messages
+		- when they send something it will appear, but only for them
+	Add Kick
+		- Add Silent Kick
+	Add Whisper
+Client:
+	Use addEventListener instead of onx for the listeners on the elements
+	Add Notifications for every message (toggleable)
+	Add Notifications when pinged (toggleable)
