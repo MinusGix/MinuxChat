@@ -548,17 +548,15 @@ let COMMANDS = Server.COMMANDS = {
 		let text = String(args.text);
 		let anon = Boolean(args.anon);
 
-		let sendText = "Server broadcast ";
+		let nick;
 
 		if (!anon) {
-			sendText += 'by ' + socket.nick;
+			nick = socket.nick;
 			if (socket.trip) {
 				sendText += '#' + socket.trip;
 			}
 		}
-
-		sendText += ': ' + text;
-		Server.broadcast({ cmd: 'info', text: sendText });
+		Server.broadcast({ cmd: 'broadcast', text, nick });
 	})
 };
 

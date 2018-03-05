@@ -104,6 +104,14 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	broadcast: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: 'Server Broadcast ' + (args.nick ? 'by ' + args.nick : '') + args.text
+		};
+		pushMessage(msg);
+	},
 	listUsersInChannel: args => {
 		let msg = {
 			nick: '*',
