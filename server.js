@@ -338,24 +338,32 @@ let COMMANDS = Server.COMMANDS = {
 
 	// Moderator-only commands below this point
 
-	kick: new Command((socket, args) => Server.isMod(socket) && args.nick, (socket, args) => {
-		let nick = String(args.nick);
+	kick: new Command((socket, args) => Server.isMod(socket) && (args.nick || args.nicks), (socket, args) => {
+		let nicks = String(args.nick || '') || args.nicks;
 		let anon = Boolean(args.anon);
 
-		let badClient = Server.websocket.clients
-			.filter(client => client.channel === socket.channel && client.nick === nick)[0];
-
-		if (!badClient) {
-			return send({ cmd: 'warn', text: 'Could not find ' + nick }, socket);
+		if (!Array.isArray(nicks)) {
+			nicks = [nicks];
 		}
 
-		if (Server.isMod(badClient)) {
-			return send({ cmd: 'warn', text: 'Cannot kick moderator' });
-		}
+		for (let i = 0; i < nicks.length; i++) {
+			let nick = nicks[i];
+
+			let badClient = Server.websocket.clients
+				.filter(client => client.channel === socket.channel && client.nick === nick)[0];
+
+			if (!badClient) {
+				return send({ cmd: 'warn', text: 'Could not find ' + nick }, socket);
+			}
+
+			if (Server.isMod(badClient)) {
+				return send({ cmd: 'warn', text: 'Cannot kick moderator' });
+			}
 		
-		badClient.channel = Math.random().toString(36).substr(2, 8);
-		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + nick}, socket.channel);
-		Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
+			badClient.channel = Math.random().toString(36).substr(2, 8);
+			Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
+		}
+		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + nicks.join(', ')}, socket.channel);
 	}).setPenalize(0.1),
 
 	usersWithSameIP: new Command(Server.isMod, (socket, args) => { // does not inform mod of users ip, just that they have the same one
