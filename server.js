@@ -37,7 +37,7 @@ let Server = {
 
 	hash: function (password) {
 		let sha = crypto.createHash(Server.Config.hash.algorithm);
-		sha.update(password + Server.Config.salt);
+		sha.update(password + Server.Config.hash.salt);
 		return sha.digest(Server.Config.hash.encoding).substr(Server.Config.hash.position.begin, Server.Config.hash.position.end);
 	},
 
@@ -54,7 +54,7 @@ let Server = {
 	},
 
 	getAddress: function (client) {
-		if (Server.Config.x_forwarded_for) {
+		if (Server.Config.server.x_forwarded_for) {
 			// The remoteAddress is 127.0.0.1 since if all connections
 			// originate from a proxy (e.g. nginx).
 			// You must write the x-forwarded-for header to determine the
@@ -105,8 +105,8 @@ Server.Config = loadJSON(Server.configFilename);
 fs.watchFile(Server.configFilename, { persistent: false }, _ => Server.Config = loadJSON(Server.configFilename));
 
 // WebSocket Server
-Server.websocket = new WebSocket.Server({ host: Server.Config.host, port: Server.Config.port });
-console.log("Started server on " + Server.Config.host + ":" + Server.Config.port);
+Server.websocket = new WebSocket.Server({ host: Server.Config.server.host, port: Server.Config.server.port });
+console.log("Started server on " + Server.Config.server.host + ":" + Server.Config.server.port);
 
 Server.websocket.on('connection', socket => {
 	// Socket receiver has crashed, flush and kill socket
@@ -121,7 +121,7 @@ Server.websocket.on('connection', socket => {
 		try {
 			// Don't penalize yet, but check whether IP is rate-limited
 			if (POLICE.frisk(socket, 0)) {
-				send({ cmd: 'warn', text: "Your IP is being rate-limited or blocked." }, socket);
+				send(Server.Config.server.ratelimitedOrBlocked, socket);
 				return;
 			}
 
@@ -226,7 +226,7 @@ let COMMANDS = Server.COMMANDS = {
 		}
 
 		if (!Server.nicknameValid(nick)) {
-			send({ cmd: 'warn', text: "Nickname must consist of up to 24 letters, numbers, and underscores" }, socket);
+			send(Server.Config.commands.join.nicknameNotValid, socket);
 			return;
 		}
 
@@ -238,7 +238,7 @@ let COMMANDS = Server.COMMANDS = {
 		for (let i = 0; i < admins.length; i++) {
 			if (nick.toLowerCase() === admins[i][0].toLowerCase()) {
 				if (socket.trip !== admins[i][1]) {
-					send({ cmd: 'warn', text: "Cannot impersonate an admin" }, socket);
+					send(Server.Config.commands.join.impersonatingAdmin, socket);
 					return;
 				}
 			}
@@ -248,7 +248,7 @@ let COMMANDS = Server.COMMANDS = {
 		for (let client of Server.websocket.clients) {
 			if (client.channel === channel) {
 				if (client.nick.toLowerCase() === nick.toLowerCase()) {
-					send({ cmd: 'warn', text: "Nickname taken" }, socket);
+					send(Server.Config.commands.join.nicknameTaken, socket);
 					return;
 				}
 			}
@@ -305,7 +305,7 @@ let COMMANDS = Server.COMMANDS = {
 			}
 		}
 		if (!friend) {
-			send({ cmd: 'warn', text: "Could not find user in channel" }, socket);
+			send(Server.Config.commands.invite.couldNotFindUser, socket);
 			return;
 		}
 
@@ -358,7 +358,7 @@ let COMMANDS = Server.COMMANDS = {
 			}
 
 			if (Server.isMod(badClient)) {
-				send({ cmd: 'warn', text: "Cannot ban moderator" }, socket);
+				send(Server.Config.commands.ban.canNotBanModerator, socket);
 				return;
 			}
 

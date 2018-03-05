@@ -6,18 +6,24 @@
   "mods": [
   	"add-mod-tripcodes-here"
   ],
-  "host": "0.0.0.0",
-  "port": "6060",
-  "x_forwarded_for": false,
-  "salt": "insert-randomly-generated-string-here",
-  
+	"server": {
+		"host": "0.0.0.0",
+  	"port": "6060",
+		"x_forwarded_for": false,
+		
+		"ratelimitedOrBlocked": { 
+			"cmd": "warn", 
+			"text": "Your IP is being rate-limited or blocked." 
+		}
+	},
   "hash": {
     "position": {
       "begin": 0,
       "end": 6
     },
     "algorithm": "sha256",
-    "encoding": "base64"
+		"encoding": "base64",
+		"salt": "insert-randomly-generated-string-here"
   },
   "commands": {
     "default": {
@@ -29,17 +35,40 @@
     },
     "join": {
       "penalize": 3,
-      "onPenalized": "You are joining channels too fast. Wait a moment and try again."
+			"onPenalized": "You are joining channels too fast. Wait a moment and try again.",
+
+			"nicknameNotValid": { 
+				"cmd": "warn", 
+				"text": "Nickname must consist of up to 24 letters, numbers, and underscores" 
+			},
+			"nicknameTaken": { 
+				"cmd": "warn", 
+				"text": "Nickname taken" 
+			},
+			"impersonatingAdmin": { 
+				"cmd": "warn", 
+				"text": "Cannot impersonate an admin" 
+			}
     },
     "chat": {
       "onPenalized": "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message."
     },
     "invite": {
       "penalize": 2,
-      "onPenalized": "You are sending invites too fast. Wait a moment before trying again."
+			"onPenalized": "You are sending invites too fast. Wait a moment before trying again.",
+			
+			"couldNotFindUser": { 
+				"cmd": "warn", 
+				"text": "Could not find user in channel" 
+			}
     },
     "ban": {
-      "penalize": 0.1
+			"penalize": 0.1,
+			
+			"canNotBanModerator": { 
+				"cmd": "warn", 
+				"text": "Cannot ban moderator" 
+			}
     }
   },
   "police": {
