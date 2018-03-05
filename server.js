@@ -40,8 +40,6 @@ server.on('connection', function(socket) {
 				send({ cmd: 'warn', text: "Your IP is being rate-limited or blocked." }, socket);
 				return;
 			}
-			// Penalize here, but don't do anything about it
-			POLICE.frisk(getAddress(socket), 1);
 
 			// ignore ridiculously large packets
 			if (data.length > 65536) {
@@ -139,17 +137,54 @@ function isMod(client) {
 	return false;
 }
 
+function getValue (value, ...params) { // returns the value, if it's a function it will be ran with the params
+	if (typeof(value) === 'function') {
+		return value(...params);
+	}
+	return value;
+}
+
 class Command {
 	constructor (verify, func) {
 		this.func = func;
 		this.verify = verify || (_ => true);
+
+		this.settings = {
+			penalize: 1,
+			onPenalized: "You are doing stuff too much! Wait a bit!"
+		};
 	}
 
 	run (socket, args) {
+		if (POLICE.frisk(getAddress(socket), this.getPenalize(socket, args))) {
+			return this.getOnPenalized(socket, args);
+		}
 		if (this.verify(socket, args)) {
 			return this.func(socket, args);
 		}
 		return false;
+	}
+
+	getPenalize (socket, args) {
+		return getValue(this.settings.penalize, socket, args);
+	}
+
+	getOnPenalized (socket, args) {
+		return getValue(this.settings.onPenalized, socket, args);
+	}
+
+	setPenalize (n=1) {
+		this.settings.penalize = n;
+		return this;
+	}
+
+	setOnPenalized (message="You are doing stuff too much! Wait a bit!") {
+		if (typeof(message) === 'string') {
+			this.settings.onPenalized = (socket, args) => send({ cmd: 'warn', text: message }, socket);
+		} else if (typeof(message) === 'function') {
+			this.settings.onPenalized = message;
+		}
+		return this;
 	}
 }
 
@@ -159,11 +194,6 @@ let COMMANDS = {
 	join: new Command((socket, args) => args.channel && args.nick && !socket.nick, (socket, args) => {
 		let channel = String(args.channel);
 		let nick = String(args.nick);
-
-		if (POLICE.frisk(getAddress(socket), 3)) {
-			send({ cmd: 'warn', text: "You are joining channels too fast. Wait a moment and try again." }, socket);
-			return;
-		}
 
 		// Process channel name
 		channel = channel.trim();
@@ -216,24 +246,10 @@ let COMMANDS = {
 			}
 		}
 		send({ cmd: 'onlineSet', nicks }, socket);
-	}),
+	}).setPenalize(3).setOnPenalized("You are joining channels too fast. Wait a moment and try again."),
 
 	chat: new Command((socket, args) => socket.channel && socket.nick && args.text, (socket, args) => {
-		let text = String(args.text);
-
-		// strip newlines from beginning and end
-		text = text.replace(/^\s*\n|^\s+$|\n\s*$/g, '');
-		// replace 3+ newlines with just 2 newlines
-		text = text.replace(/\n{3,}/g, "\n\n");
-		if (!text) {
-			return;
-		}
-
-		let score = text.length / 83 / 4;
-		if (POLICE.frisk(getAddress(socket), score)) {
-			send({ cmd: 'warn', text: "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message." }, socket);
-			return;
-		}
+		let text = args.modifiedText; // modified in the setPenalize.
 
 		let data = { cmd: 'chat', nick: socket.nick, text };
 		if (isAdmin(socket)) {
@@ -247,15 +263,15 @@ let COMMANDS = {
 		}
 
 		broadcast(data, socket.channel);
-	}),
+	}).setPenalize((socket, args) => {
+		args.modifiedText = String(args.text)
+			.replace(/^\s*\n|^\s+$|\n\s*$/g, '') // strip newlines from beginning and end
+			.replace(/\n{3,}/g, "\n\n"); // replace 3+ newlines with just 2 newlines
+		return (args.modifiedText.length / 83 / 4) + 1;
+	}).setOnPenalized("You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message."),
 
 	invite: new Command((socket, args) => socket.channel && socket.nick && args.nick, (socket, args) => {
 		let nick = String(args.nick);
-
-		if (POLICE.frisk(getAddress(socket), 2)) {
-			send({ cmd: 'warn', text: "You are sending invites too fast. Wait a moment before trying again." }, socket);
-			return;
-		}
 
 		let friend;
 		for (let client of server.clients) {
@@ -278,7 +294,7 @@ let COMMANDS = {
 		let channel = Math.random().toString(36).substr(2, 8);
 		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, socket);
 		send({ cmd: 'info', text: socket.nick + " invited you to ?" + channel }, friend);
-	}),
+	}).setPenalize(2).setOnPenalized("You are sending invites too fast. Wait a moment before trying again."),
 
 	stats: new Command(null, (socket, args) => {
 		let ips = {};
