@@ -30,7 +30,6 @@ let Server = {
 	broadcast: function (data, channel) {
 		for (let client of Server.websocket.clients) {
 			if (channel ? client.channel === channel : client.channel) {
-				console.log(client.nick);
 				send(data, client);
 			}
 		}
