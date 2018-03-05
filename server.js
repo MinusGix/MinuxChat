@@ -71,8 +71,21 @@ let Server = {
 		return /^[a-zA-Z0-9_]{1,24}$/.test(nick);
 	},
 
+	isAdminPair: function (nick, trip) {
+		let admins = Server.Config.admins;
+		for (let i = 0; i < admins.length; i++) {
+			if (nick.toLowerCase() === admins[i][0].toLowerCase()) {
+				if (trip === admins[i][1]) {
+					return true;
+				}
+				return false;
+			}
+		}
+		return false;
+	},
+
 	isAdmin: function (client) {
-		return client.nick === Server.Config.admin;
+		return this.isAdminPair(client.nick, client.trip);
 	},
 
 	isMod: function (client) {
@@ -218,13 +231,18 @@ let COMMANDS = Server.COMMANDS = {
 			return;
 		}
 
-		if (nick.toLowerCase() === Server.Config.admin.toLowerCase()) {
-			if (password !== Server.Config.password) {
-				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, socket);
-				return;
-			}
-		} else if (password) {
+		if (password) {
 			socket.trip = Server.hash(password);
+		}
+
+		let admins = Server.Config.admins;
+		for (let i = 0; i < admins.length; i++) {
+			if (nick.toLowerCase() === admins[i][0].toLowerCase()) {
+				if (socket.trip !== admins[i][1]) {
+					send({ cmd: 'warn', text: "Cannot impersonate an admin" }, socket);
+					return;
+				}
+			}
 		}
 
 		let address = Server.getAddress(socket);
@@ -264,7 +282,7 @@ let COMMANDS = Server.COMMANDS = {
 			data.mod = true;
 		}
 		
-		if (socket.trip) {
+		if (socket.trip && !data.admin) {
 			data.trip = socket.trip;
 		}
 
