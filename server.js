@@ -395,7 +395,17 @@ let COMMANDS = Server.COMMANDS = {
 			Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
 		}
 
-		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + kicked.join(', ')}, socket.channel);
+		let text = 'Kicked ' + kicked.join(', ');
+
+		if (!anon) {
+			text = ' ' + text;
+			if (socket.trip) {
+				text = '#' + socket.trip + text;
+			}
+			text = socket.nick + text;
+		}
+
+		Server.broadcast({ cmd: 'info', text }, socket.channel);
 	})
 	.setPenalize(0.1),
 
