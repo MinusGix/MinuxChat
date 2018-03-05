@@ -14,6 +14,13 @@ function loadJSON(filename) {
 	}
 }
 
+function getValue (value, ...params) { // returns the value, if it's a function it will be ran with the params
+	if (typeof(value) === 'function') {
+		return value(...params);
+	}
+	return value;
+}
+
 let Server = {
 	configFilename: "JSON/config.json",
 
@@ -141,13 +148,6 @@ Server.websocket.on('connection', socket => {
 	});
 });
 
-function getValue (value, ...params) { // returns the value, if it's a function it will be ran with the params
-	if (typeof(value) === 'function') {
-		return value(...params);
-	}
-	return value;
-}
-
 class Command {
 	constructor (verify, func) {
 		this.func = func;
@@ -199,7 +199,8 @@ class Command {
 
 
 let COMMANDS = Server.COMMANDS = {
-	ping: new Command(null, _ => _), // Don't do anything
+	ping: new Command(null, _ => _).setPenalize(0.1), // Don't do anything
+
 	join: new Command((socket, args) => args.channel && args.nick && !socket.nick, (socket, args) => {
 		let channel = String(args.channel);
 		let nick = String(args.nick);
@@ -221,7 +222,7 @@ let COMMANDS = Server.COMMANDS = {
 		}
 
 		let password = nickArr[1];
-		if (nick.toLowerCase() == Server.Config.admin.toLowerCase()) {
+		if (nick.toLowerCase() === Server.Config.admin.toLowerCase()) {
 			if (password !== Server.Config.password) {
 				send({ cmd: 'warn', text: "Cannot impersonate the admin" }, socket);
 				return;
@@ -285,7 +286,7 @@ let COMMANDS = Server.COMMANDS = {
 		let friend;
 		for (let client of Server.websocket.clients) {
 			// Find friend's client
-			if (client.channel == socket.channel && client.nick == nick) {
+			if (client.channel === socket.channel && client.nick === nick) {
 				friend = client;
 				break;
 			}
