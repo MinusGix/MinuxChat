@@ -36,9 +36,9 @@ let Server = {
 	},
 
 	hash: function (password) {
-		let sha = crypto.createHash('sha256');
+		let sha = crypto.createHash(Server.Config.hash.algorithm);
 		sha.update(password + Server.Config.salt);
-		return sha.digest('base64').substr(0, 6);
+		return sha.digest(Server.Config.hash.encoding).substr(Server.Config.hash.position.begin, Server.Config.hash.position.end);
 	},
 
 	send: function (data, client) {
@@ -60,8 +60,7 @@ let Server = {
 			// You must write the x-forwarded-for header to determine the
 			// client's real IP address.
 			return client.upgradeReq.headers['x-forwarded-for'];
-		}
-		else {
+		} else {
 			return client.upgradeReq.connection.remoteAddress;
 		}
 	},
@@ -167,8 +166,8 @@ class Command {
 		this.verify = verify || (_ => true);
 
 		this.settings = {
-			penalize: 1,
-			onPenalized: "You are doing stuff too much! Wait a bit!"
+			penalize: Server.Config.commands.default.penalize,
+			onPenalized: Server.Config.commands.default.onPenalized
 		};
 	}
 
@@ -212,7 +211,7 @@ class Command {
 
 
 let COMMANDS = Server.COMMANDS = {
-	ping: new Command(null, _ => _).setPenalize(0.1), // Don't do anything
+	ping: new Command(null, _ => _).setPenalize(_ => Server.Config.commands.ping.penalize), // Don't do anything
 
 	join: new Command((socket, args) => args.channel && args.nick && !socket.nick, (socket, args) => {
 		let channel = String(args.channel);
@@ -268,7 +267,8 @@ let COMMANDS = Server.COMMANDS = {
 			.map(client => client.nick);
 		
 		send({ cmd: 'onlineSet', nicks }, socket);
-	}).setPenalize(3).setOnPenalized("You are joining channels too fast. Wait a moment and try again."),
+	}).setPenalize(_ => Server.Config.commands.join.penalize)
+	.setOnPenalized(_ => Server.Config.commands.join.onPenalized),
 
 	chat: new Command((socket, args) => socket.channel && socket.nick && args.text, (socket, args) => {
 		let text = args.modifiedText; // modified in the setPenalize.
@@ -290,7 +290,7 @@ let COMMANDS = Server.COMMANDS = {
 			.replace(/^\s*\n|^\s+$|\n\s*$/g, '') // strip newlines from beginning and end
 			.replace(/\n{3,}/g, "\n\n"); // replace 3+ newlines with just 2 newlines
 		return (args.modifiedText.length / 83 / 4) + 1;
-	}).setOnPenalized("You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message."),
+	}).setOnPenalized(_ => Server.Config.commands.chat.onPenalized),
 
 	invite: new Command((socket, args) => socket.channel && socket.nick && args.nick, (socket, args) => {
 		let nick = String(args.nick);
@@ -316,7 +316,8 @@ let COMMANDS = Server.COMMANDS = {
 
 		send({ cmd: 'info', text: "You invited " + friend.nick + " to ?" + channel }, socket);
 		send({ cmd: 'info', text: socket.nick + " invited you to ?" + channel }, friend);
-	}).setPenalize(2).setOnPenalized("You are sending invites too fast. Wait a moment before trying again."),
+	}).setPenalize(_ => Server.Config.commands.invite.penalize)
+	.setOnPenalized(_ => Server.Config.commands.invite.onPenalized),
 
 	stats: new Command(null, (socket, args) => {
 		let ips = {};
@@ -366,7 +367,7 @@ let COMMANDS = Server.COMMANDS = {
 			console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " [" + badClient.trip + "] in " + socket.channel);
 		}
 		Server.broadcast({ cmd: 'info', text: "Banned " + banned.join(', ') }, socket.channel);
-	}).setPenalize(0.1), // very minute amount on the ban
+	}).setPenalize(Server.Config.commands.ban.penalize), // very minute amount on the ban
 
 	unban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
 		let ips = String(args.ip || '') || args.ips;
@@ -411,8 +412,8 @@ let COMMANDS = Server.COMMANDS = {
 // rate limiter
 let POLICE = Server.POLICE = {
 	records: {},
-	halflife: 30000, // ms
-	threshold: 15,
+	halflife: Server.Config.police.halflife, // ms
+	threshold: Server.Config.police.threshold,
 
 	loadJail: filename => {
 		let ids;
@@ -483,4 +484,4 @@ let POLICE = Server.POLICE = {
 	}
 };
 
-POLICE.loadJail('jail.txt');
+POLICE.loadJail(Server.Config.police.jailFile);
