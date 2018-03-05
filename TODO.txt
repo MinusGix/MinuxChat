@@ -4,9 +4,12 @@ Server:
 		- They will not see a banned message
 		- They will see everyone's messages
 		- when they send something it will appear, but only for them
-	Add Kick
-		- Add Silent Kick
+	Ad nonsilent kick
 	Add Whisper
+	Add mute, they can not send message for a duration.
+	Add a timed ban
+	Return an array of [nick, trip] whenever getting those
+		- Also make a function to get a sockets [nick, trip] for DRY
 Client:
 	Use addEventListener instead of onx for the listeners on the elements
 	Add Notifications for every message (toggleable)
