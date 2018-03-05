@@ -422,7 +422,7 @@ function usersClear() {
 }
 
 function userInvite(nick) {
-	send({ cmd: 'invite', nick });
+	send({ cmd: 'invite', nick, channel: prompt("Channel to invite them to (leave blank for random):") || undefined });
 }
 
 function userIgnore(nick) {
