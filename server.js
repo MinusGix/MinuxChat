@@ -366,7 +366,7 @@ let COMMANDS = Server.COMMANDS = {
 				continue;
 			}
 			
-			kicked.push(nick);
+			kicked.push(nick + (badClient.trip ? '#' + badClient.trip : ''));
 			badClient.channel = Math.random().toString(36).substr(2, 8);
 			Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
 			console.log(socket.nick + " [" + socket.trip + "] kicked " + nick + " [" + badClient.trip + "] in " + socket.channel + " to " + badClient.channel);
@@ -423,7 +423,7 @@ let COMMANDS = Server.COMMANDS = {
 				continue;
 			}
 
-			banned.push(nick);
+			banned.push(nick + (badClient.trip ? '#' + badClient.trip : ''));
 			POLICE.arrest(badClient);
 			console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " [" + badClient.trip + "] in " + socket.channel);
 		}
