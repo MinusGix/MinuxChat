@@ -466,9 +466,20 @@ let COMMANDS = Server.COMMANDS = {
 			POLICE.arrest(badClient);
 			console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " [" + badClient.trip + "] in " + socket.channel);
 		}
+		
+		let text = "Banned " + banned.join(', ');
+
+		if (!anon) {
+			text = ' ' + text;
+			if (socket.trip) {
+				text = '#' + socket.trip + text;
+			}
+			text = socket.nick + text;
+		}
+
 		Server.broadcast({ 
 			cmd: 'info', 
-			text: "Banned " + banned.join(', ') + (anon ? '' : ' by ' + socket.nick + (socket.trip ? '#' + socket.trip : '')) 
+			text
 		}, socket.channel);
 	})
 	.setPenalize(Server.Config.commands.ban.penalize), // very minute amount on the ban
