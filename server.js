@@ -337,6 +337,7 @@ let COMMANDS = Server.COMMANDS = {
 
 	ban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && (args.nick || args.nicks), (socket, args) => {
 		let nicks = String(args.nick || '') || args.nicks;
+		let anon = Boolean(args.anon);
 
 		if (!Array.isArray(nicks)) {
 			nicks = [nicks];
@@ -366,7 +367,10 @@ let COMMANDS = Server.COMMANDS = {
 			POLICE.arrest(badClient);
 			console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " [" + badClient.trip + "] in " + socket.channel);
 		}
-		Server.broadcast({ cmd: 'info', text: "Banned " + banned.join(', ') }, socket.channel);
+		Server.broadcast({ 
+			cmd: 'info', 
+			text: "Banned " + banned.join(', ') + (anon ? '' : 'by ' + socket.nick + (socket.trip ? '#' + socket.trip : '')) 
+		}, socket.channel);
 	}).setPenalize(Server.Config.commands.ban.penalize), // very minute amount on the ban
 
 	unban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
