@@ -84,7 +84,7 @@ let Server = {
 	},
 
 	isAdmin: function (client) {
-		return this.isAdminPair(client.nick, client.trip);
+		return Server.isAdminPair(client.nick, client.trip);
 	},
 
 	isMod: function (client) {
@@ -381,6 +381,16 @@ let COMMANDS = Server.COMMANDS = {
 			console.log(socket.nick + " [" + socket.trip + "] unbanned " + ips[i] + " in " + socket.channel);
 		}
 		send({ cmd: 'info', text: "Unbanned " + ips.join(', ') }, socket);
+	}),
+
+	listUsersInChannel: new Command((socket, args) => Server.isMod(socket) && args.channel, (socket, args) => {
+		let channel = String(args.channel);
+
+		let users = Server.websocket.clients
+			.filter(client => client.channel === channel)
+			.map(client => client.nick);
+
+		send({ cmd: 'info', text: 'Users online in ?' + channel + ' :\n' + (users.join(', ') || 'There is a sound of the void, no souls live in this dread realm.')}, socket);
 	}),
 
 	// Admin-only commands below this point
