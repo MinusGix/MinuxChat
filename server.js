@@ -430,14 +430,14 @@ let COMMANDS = Server.COMMANDS = {
 			users[address].push(client.nick + (client.trip ? '#' + client.trip : ''));
 		});
 
-		let text = "User's with same ips:\n";
+		let same = [];
 		for (let address in users) {
 			if (users[address].length > 1) {
-				text += '* Same: ' + users[address].join(', ') + '\n';
+				same.push(users[address]);
 			}
 		}
 
-		send({ cmd: 'info', text }, socket);
+		send({ cmd: 'usersWithSameIP', same }, socket);
 	}),
 
 	ban: new Command()

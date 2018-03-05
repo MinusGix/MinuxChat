@@ -104,6 +104,14 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	usersWithSameIP: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: "Users with same IPs:\n" + args.same.map(users => '* Same: ' + users.join(', ')).join('\n')
+		};
+		pushMessage(msg);
+	},
 	invited: args => {
 		let msg = {
 			nick: '*',
