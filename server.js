@@ -536,10 +536,7 @@ let COMMANDS = Server.COMMANDS = {
 			}
 		}
 
-		let lines = Object.entries(channels).map(channel => "?" + channel[0] + " " + channel[1].join(', '));
-		let text = Server.websocket.clients.length + " users online:\n\n";
-		text += lines.join("\n");
-		send({ cmd: 'info', text }, socket);
+		send({ cmd: 'listUsers', channels, clientAmount: Server.websocket.clients.length }, socket);
 	}),
 
 	broadcast: new Command()

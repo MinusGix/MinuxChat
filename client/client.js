@@ -104,6 +104,17 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	listUsers: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: args.clientAmount + " users online:\n\n" + 
+				Object.entries(args.channels)
+					.map(channel => "?" + channel[0] + " " + channel[1].join(', '))
+					.join('\n')
+		};
+		pushMessage(msg);
+	},
 	broadcast: args => {
 		let msg = {
 			nick: '*',
