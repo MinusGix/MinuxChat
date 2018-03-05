@@ -353,11 +353,17 @@ let COMMANDS = Server.COMMANDS = {
 	}).setPenalize(0.1), // very minute amount on the ban
 
 	unban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
-		let ips = String(args.ip);
+		let ips = String(args.ip || '') || args.ips;
 
-		POLICE.pardon(ip);
-		console.log(socket.nick + " [" + socket.trip + "] unbanned " + ip + " in " + socket.channel);
-		send({ cmd: 'info', text: "Unbanned " + ip }, socket);
+		if (!Array.isArray(ips)) {
+			ips = [ips];
+		}
+
+		for (let i = 0; i < ips.length; i++) {
+			POLICE.pardon(ips[i]);
+			console.log(socket.nick + " [" + socket.trip + "] unbanned " + ips[i] + " in " + socket.channel);
+		}
+		send({ cmd: 'info', text: "Unbanned " + ips.join(', ') }, socket);
 	}),
 
 	// Admin-only commands below this point
