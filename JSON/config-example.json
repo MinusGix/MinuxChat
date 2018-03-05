@@ -9,5 +9,42 @@
   "host": "0.0.0.0",
   "port": "6060",
   "x_forwarded_for": false,
-  "salt": "insert-randomly-generated-string-here"
+  "salt": "insert-randomly-generated-string-here",
+  
+  "hash": {
+    "position": {
+      "begin": 0,
+      "end": 6
+    },
+    "algorithm": "sha256",
+    "encoding": "base64"
+  },
+  "commands": {
+    "default": {
+      "penalize": 1,
+      "onPenalized": "You are doing stuff too much! Wait a bit!"
+    },
+    "ping": {
+      "penalize": 0.1
+    },
+    "join": {
+      "penalize": 3,
+      "onPenalized": "You are joining channels too fast. Wait a moment and try again."
+    },
+    "chat": {
+      "onPenalized": "You are sending too much text. Wait a moment and try again.\nPress the up arrow key to restore your last message."
+    },
+    "invite": {
+      "penalize": 2,
+      "onPenalized": "You are sending invites too fast. Wait a moment before trying again."
+    },
+    "ban": {
+      "penalize": 0.1
+    }
+  },
+  "police": {
+    "jailFile": "jail.txt",
+    "halflife": 30000,
+    "threshold": 15
+  }
 }
