@@ -104,6 +104,22 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	invited: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: "You invited " + args.nick + " to ?" + args.channel
+		};
+		pushMessage(args);
+	},
+	invite: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: args.nick + " invited you to ?" + args.channel
+		};
+		pushMessage(args);
+	},
 	stats: args => {
 		let msg = {
 			nick: '*',
