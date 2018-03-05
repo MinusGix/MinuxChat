@@ -162,7 +162,7 @@ Server.websocket.on('connection', socket => {
 	socket.on('close', _ => {
 		try {
 			if (socket.channel) {
-				Server.broadcast({ cmd: 'onlineRemove', nick: socket.nick }, socket.channel);
+				Server.broadcast({ cmd: 'onlineRemove', nick: Server.socketPair(socket) }, socket.channel);
 			}
 		} catch (error) {
 			console.warn(error.stack);
@@ -271,17 +271,18 @@ let COMMANDS = Server.COMMANDS = {
 			}
 		}
 
+		socket.nick = nick;
+
 		// Announce the new user
-		Server.broadcast({ cmd: 'onlineAdd', nick }, channel);
+		Server.broadcast({ cmd: 'onlineAdd', nick: Server.socketPair(socket) }, channel);
 
 		// Formally join channel
 		socket.channel = channel;
-		socket.nick = nick;
 
 		// Set the online users for new user
 		let nicks = Server.websocket.clients
 			.filter(client => client.channel === channel)
-			.map(client => client.nick);
+			.map(client => Server.socketPair(client));
 		
 		send({ cmd: 'onlineSet', nicks }, socket);
 	})
@@ -405,7 +406,7 @@ let COMMANDS = Server.COMMANDS = {
 			for (let i = 0; i < kicked.length; i++) {
 				// this needs to be in a separate loop, otherwise the other kicked users will see other users leaving
 				// which might tip off a person spamming with multiple users.
-				Server.broadcast({ cmd: 'onlineRemove', nick: kicked[i][0] }, socket.channel);
+				Server.broadcast({ cmd: 'onlineRemove', nick: kicked[i] }, socket.channel);
 			}
 		
 			let kicker;

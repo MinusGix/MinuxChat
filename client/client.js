@@ -198,21 +198,21 @@ let COMMANDS = {
 	onlineSet: args => {
 		let nicks = args.nicks;
 		usersClear();
-		nicks.forEach(nick => userAdd(nick));
-		pushMessage({ nick: '*', text: "Users online: " + nicks.join(", ") });
+		nicks.forEach(nick => userAdd(nick[0]));
+		pushMessage({ nick: '*', text: "Users online: " + nicks.map(user => user.join('#')).join(", ") });
 	},
 	onlineAdd: args => {
 		let nick = args.nick;
-		userAdd(nick);
+		userAdd(nick[0]);
 		if ($('#joined-left').checked) {
-			pushMessage({ nick: '*', text: nick + " joined" });
+			pushMessage({ nick: '*', text: nick.join('#') + " joined" });
 		}
 	},
 	onlineRemove: args => {
 		let nick = args.nick;
-		userRemove(nick);
+		userRemove(nick[0]);
 		if ($('#joined-left').checked) {
-			pushMessage({ nick: '*', text: nick + " left" });
+			pushMessage({ nick: '*', text: nick.join('#') + " left" });
 		}
 	}
 };
