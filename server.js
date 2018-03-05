@@ -378,7 +378,7 @@ let POLICE = {
 	halflife: 30000, // ms
 	threshold: 15,
 
-	loadJail: function(filename) {
+	loadJail: filename => {
 		let ids;
 		try {
 			let text = fs.readFileSync(filename, 'utf8');
@@ -389,16 +389,16 @@ let POLICE = {
 
 		for (let id of ids) {
 			if (id && id[0] != '#') {
-				this.arrest(id);
+				POLICE.arrest(id);
 			}
 		}
 		console.log("Loaded jail '" + filename + "'");
 	},
 
-	search: function(id) {
-		let record = this.records[id];
+	search: id => {
+		let record = POLICE.records[id];
 		if (!record) {
-			record = this.records[id] = {
+			record = POLICE.records[id] = {
 				time: Date.now(),
 				score: 0,
 			};
@@ -406,34 +406,34 @@ let POLICE = {
 		return record;
 	},
 
-	frisk: function(id, deltaScore) {
-		let record = this.search(id);
+	frisk: (id, deltaScore) => {
+		let record = POLICE.search(id);
 		if (record.arrested) {
 			return true;
 		}
 
-		record.score *= Math.pow(2, -(Date.now() - record.time)/POLICE.halflife);
+		record.score *= Math.pow(2, -(Date.now() - record.time) / POLICE.halflife);
 		record.score += deltaScore;
 		record.time = Date.now();
-		if (record.score >= this.threshold) {
+		if (record.score >= POLICE.threshold) {
 			return true;
 		}
 		return false;
 	},
 
-	arrest: function(id) {
-		let record = this.search(id);
+	arrest: id => {
+		let record = POLICE.search(id);
 		if (record) {
 			record.arrested = true;
 		}
 	},
 
-	pardon: function(id) {
-		let record = this.search(id);
+	pardon: id => {
+		let record = POLICE.search(id);
 		if (record) {
 			record.arrested = false;
 		}
-	},
+	}
 };
 
 POLICE.loadJail('jail.txt');
