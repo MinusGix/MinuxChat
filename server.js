@@ -340,6 +340,8 @@ let COMMANDS = Server.COMMANDS = {
 
 	kick: new Command((socket, args) => Server.isMod(socket) && args.nick, (socket, args) => {
 		let nick = String(args.nick);
+		let anon = Boolean(args.anon);
+
 		let badClient = Server.websocket.clients
 			.filter(client => client.channel === socket.channel && client.nick === nick)[0];
 
@@ -352,7 +354,7 @@ let COMMANDS = Server.COMMANDS = {
 		}
 		
 		badClient.channel = Math.random().toString(36).substr(2, 8);
-		Server.broadcast({ cmd: 'info', text: 'Kicked ' + nick}, socket.channel);
+		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + nick}, socket.channel);
 		Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
 	}).setPenalize(0.1),
 
