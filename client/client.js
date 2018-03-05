@@ -104,6 +104,14 @@ let COMMANDS = {
 		}
 		pushMessage(args);
 	},
+	unban: args => {
+		let msg = {
+			nick: '*',
+			cmd: 'info',
+			text: "Unbanned " + args.ips.join(', ')
+		};
+		pushMessage(msg);
+	},
 	ban: args => {
 		let msg = {
 			nick: '*',

@@ -506,7 +506,7 @@ let COMMANDS = Server.COMMANDS = {
 			POLICE.pardon(ips[i]);
 			console.log(socket.nick + " [" + socket.trip + "] unbanned " + ips[i] + " in " + socket.channel);
 		}
-		send({ cmd: 'info', text: "Unbanned " + ips.join(', ') }, socket);
+		send({ cmd: 'unban', ips }, socket);
 	}),
 
 	listUsersInChannel: new Command()
