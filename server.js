@@ -121,7 +121,7 @@ Server.websocket.on('connection', socket => {
 	socket.on('message', data => {
 		try {
 			// Don't penalize yet, but check whether IP is rate-limited
-			if (POLICE.frisk(Server.getAddress(socket), 0)) {
+			if (POLICE.frisk(socket, 0)) {
 				send({ cmd: 'warn', text: "Your IP is being rate-limited or blocked." }, socket);
 				return;
 			}
@@ -173,7 +173,7 @@ class Command {
 	}
 
 	run (socket, args) {
-		if (POLICE.frisk(Server.getAddress(socket), this.getPenalize(socket, args))) {
+		if (POLICE.frisk(socket, this.getPenalize(socket, args))) {
 			return this.getOnPenalized(socket, args);
 		}
 		if (this.verify(socket, args)) {
@@ -362,7 +362,7 @@ let COMMANDS = Server.COMMANDS = {
 			}
 
 			banned.push(nick);
-			POLICE.arrest(Server.getAddress(badClient));
+			POLICE.arrest(badClient);
 			console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " [" + badClient.trip + "] in " + socket.channel);
 		}
 		Server.broadcast({ cmd: 'info', text: "Banned " + banned.join(', ') }, socket.channel);
@@ -432,6 +432,7 @@ let POLICE = Server.POLICE = {
 	},
 
 	search: id => {
+		id = POLICE.convertID(id);
 		let record = POLICE.records[id];
 		if (!record) {
 			record = POLICE.records[id] = {
@@ -443,6 +444,7 @@ let POLICE = Server.POLICE = {
 	},
 
 	frisk: (id, deltaScore) => {
+		id = POLICE.convertID(id);
 		let record = POLICE.search(id);
 		if (record.arrested) {
 			return true;
@@ -458,6 +460,7 @@ let POLICE = Server.POLICE = {
 	},
 
 	arrest: id => {
+		id = POLICE.convertID(id);
 		let record = POLICE.search(id);
 		if (record) {
 			record.arrested = true;
@@ -465,10 +468,18 @@ let POLICE = Server.POLICE = {
 	},
 
 	pardon: id => {
+		id = POLICE.convertID(id);
 		let record = POLICE.search(id);
 		if (record) {
 			record.arrested = false;
 		}
+	},
+
+	convertID: id => {
+		if (id instanceof WebSocket) {
+			return Server.getAddress(id);
+		}
+		return id;
 	}
 };
 
