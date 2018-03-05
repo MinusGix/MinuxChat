@@ -454,7 +454,9 @@ function usersClear() {
 }
 
 function userInvite(nick) {
-	send({ cmd: 'invite', nick, channel: prompt("Channel to invite them to (leave blank for random):") || undefined });
+	if (nick !== myNick.split('#')[0]) {
+		send({ cmd: 'invite', nick, channel: prompt("Channel to invite them to (leave blank for random):") || undefined });
+	}
 }
 
 function userIgnore(nick) {
