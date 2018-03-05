@@ -353,11 +353,13 @@ let COMMANDS = Server.COMMANDS = {
 				.filter(client => client.channel === socket.channel && client.nick === nick)[0];
 
 			if (!badClient) {
-				return send({ cmd: 'warn', text: 'Could not find ' + nick }, socket);
+				send({ cmd: 'warn', text: 'Could not find ' + nick }, socket);
+				continue;
 			}
 
 			if (Server.isMod(badClient)) {
-				return send({ cmd: 'warn', text: 'Cannot kick moderator' });
+				send({ cmd: 'warn', text: 'Cannot kick moderator' });
+				continue;
 			}
 		
 			badClient.channel = Math.random().toString(36).substr(2, 8);
@@ -407,12 +409,12 @@ let COMMANDS = Server.COMMANDS = {
 
 			if (!badClient) {
 				send({ cmd: 'warn', text: "Could not find " + nick }, socket);
-				return;
+				continue;
 			}
 
 			if (Server.isMod(badClient)) {
 				send(Server.Config.commands.ban.canNotBanModerator, socket);
-				return;
+				continue;
 			}
 
 			banned.push(nick);
