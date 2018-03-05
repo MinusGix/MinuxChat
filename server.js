@@ -24,9 +24,9 @@ fs.watchFile(configFilename, { persistent: false }, _ => config = loadJSON(confi
 let server = new WebSocket.Server({ host: config.host, port: config.port });
 console.log("Started server on " + config.host + ":" + config.port);
 
-server.on('connection', function(socket) {
+server.on('connection', socket => {
 	// Socket receiver has crashed, flush and kill socket
-	socket._receiver.onerror = function(e){
+	socket._receiver.onerror = error => {
 		socket._receiver.flush();
 		socket._receiver.messageBuffer = [];
 		socket._receiver.cleanup();
@@ -54,14 +54,14 @@ server.on('connection', function(socket) {
 					command.run(socket, args);
 				}
 			}
-		} catch (e) {
+		} catch (error) {
 			// Socket sent malformed JSON or buffer contains invalid JSON
 			// For security reasons, we should kill it
 			socket._receiver.flush();
 			socket._receiver.messageBuffer = [];
 			socket._receiver.cleanup();
 			socket.close();
-			console.warn(e.stack);
+			console.warn(error.stack);
 		}
 	});
 
@@ -70,8 +70,8 @@ server.on('connection', function(socket) {
 			if (socket.channel) {
 				broadcast({ cmd: 'onlineRemove', nick: socket.nick }, socket.channel);
 			}
-		} catch (e) {
-			console.warn(e.stack);
+		} catch (error) {
+			console.warn(error.stack);
 		}
 	});
 });
@@ -171,6 +171,11 @@ class Command {
 
 	getOnPenalized (socket, args) {
 		return getValue(this.settings.onPenalized, socket, args);
+	}
+
+	setCommandFunction (func) { // for if they want to set the command later
+		this.func = func;
+		return this;
 	}
 
 	setPenalize (n=1) {
@@ -331,7 +336,7 @@ let COMMANDS = {
 		POLICE.arrest(getAddress(badClient));
 		console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " in " + socket.channel);
 		broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
-	}),
+	}).setPenalize(0.1), // very minute amount on the ban
 
 	unban: new Command((socket, args) => isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
 		let ip = String(args.ip);
