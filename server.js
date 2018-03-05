@@ -357,6 +357,7 @@ let COMMANDS = Server.COMMANDS = {
 	.setCommandFunction((socket, args) => {
 		let nicks = String(args.nick || '') || args.nicks;
 		let anon = Boolean(args.anon);
+		let channel = String(args.channel || Math.random().toString(36).substr(2, 8));
 
 		if (!Array.isArray(nicks)) {
 			nicks = [nicks];
@@ -383,9 +384,9 @@ let COMMANDS = Server.COMMANDS = {
 			}
 			
 			kicked.push(nick + (badClient.trip ? '#' + badClient.trip : ''));
-			badClient.channel = Math.random().toString(36).substr(2, 8);
+			badClient.channel = channel;
 			Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
-			console.log(socket.nick + " [" + socket.trip + "] kicked " + nick + " [" + badClient.trip + "] in " + socket.channel + " to " + badClient.channel);
+			console.log(socket.nick + " [" + socket.trip + "] kicked " + nick + " [" + badClient.trip + "] in " + socket.channel + " to " + channel);
 		}
 		Server.broadcast({ cmd: 'info', text: (anon ? '' : socket.nick + (socket.trip ? '#' + socket.trip : '') + ' ') + 'Kicked ' + kicked.join(', ')}, socket.channel);
 	})
