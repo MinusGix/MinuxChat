@@ -15,13 +15,77 @@ function loadJSON(filename) {
 }
 
 let Server = {
-	configFilename: "JSON/config.json"
-};
-Server.Config = loadJSON(Server.configFilename);
+	configFilename: "JSON/config.json",
 
+	/** Sends data to all clients
+	channel: if not null, restricts broadcast to clients in the channel
+	*/
+	broadcast: function (data, channel) {
+		for (let client of Server.websocket.clients) {
+			if (channel ? client.channel === channel : client.channel) {
+				send(data, client);
+			}
+		}
+	},
+
+	hash: function (password) {
+		let sha = crypto.createHash('sha256');
+		sha.update(password + Server.Config.salt);
+		return sha.digest('base64').substr(0, 6);
+	},
+
+	send: function (data, client) {
+		// Add timestamp to command
+		data.time = Date.now();
+		try {
+			if (client.readyState === WebSocket.OPEN) {
+				client.send(JSON.stringify(data));
+			}
+		} catch (e) {
+			console.error(e);
+		}
+	},
+
+	getAddress: function (client) {
+		if (Server.Config.x_forwarded_for) {
+			// The remoteAddress is 127.0.0.1 since if all connections
+			// originate from a proxy (e.g. nginx).
+			// You must write the x-forwarded-for header to determine the
+			// client's real IP address.
+			return client.upgradeReq.headers['x-forwarded-for'];
+		}
+		else {
+			return client.upgradeReq.connection.remoteAddress;
+		}
+	},
+
+	nicknameValid: function (nick) {
+		// Allow letters, numbers, and underscores
+		return /^[a-zA-Z0-9_]{1,24}$/.test(nick);
+	},
+
+	isAdmin: function (client) {
+		return client.nick === Server.Config.admin;
+	},
+
+	isMod: function (client) {
+		if (Server.isAdmin(client)) return true;
+		if (Server.Config.mods) {
+			if (client.trip && Server.Config.mods.includes(client.trip)) {
+				return true;
+			}
+		}
+		return false;
+	}
+};
+// Declaring global variables for simplicity
+let send = Server.send;
+
+// Config
+Server.Config = loadJSON(Server.configFilename);
 fs.watchFile(Server.configFilename, { persistent: false }, _ => Server.Config = loadJSON(Server.configFilename));
 
-
+// WebSocket Server
 Server.websocket = new WebSocket.Server({ host: Server.Config.host, port: Server.Config.port });
 console.log("Started server on " + Server.Config.host + ":" + Server.Config.port);
 
@@ -37,7 +101,7 @@ Server.websocket.on('connection', socket => {
 	socket.on('message', data => {
 		try {
 			// Don't penalize yet, but check whether IP is rate-limited
-			if (POLICE.frisk(getAddress(socket), 0)) {
+			if (POLICE.frisk(Server.getAddress(socket), 0)) {
 				send({ cmd: 'warn', text: "Your IP is being rate-limited or blocked." }, socket);
 				return;
 			}
@@ -69,74 +133,13 @@ Server.websocket.on('connection', socket => {
 	socket.on('close', _ => {
 		try {
 			if (socket.channel) {
-				broadcast({ cmd: 'onlineRemove', nick: socket.nick }, socket.channel);
+				Server.broadcast({ cmd: 'onlineRemove', nick: socket.nick }, socket.channel);
 			}
 		} catch (error) {
 			console.warn(error.stack);
 		}
 	});
 });
-
-function send(data, client) {
-	// Add timestamp to command
-	data.time = Date.now();
-	try {
-		if (client.readyState === WebSocket.OPEN) {
-			client.send(JSON.stringify(data));
-		}
-	} catch (e) {
-		console.error(e);
-	}
-}
-
-/** Sends data to all clients
-channel: if not null, restricts broadcast to clients in the channel
-*/
-function broadcast(data, channel) {
-	for (let client of Server.websocket.clients) {
-		if (channel ? client.channel === channel : client.channel) {
-			send(data, client);
-		}
-	}
-}
-
-function nicknameValid(nick) {
-	// Allow letters, numbers, and underscores
-	return /^[a-zA-Z0-9_]{1,24}$/.test(nick);
-}
-
-function getAddress(client) {
-	if (Server.Config.x_forwarded_for) {
-		// The remoteAddress is 127.0.0.1 since if all connections
-		// originate from a proxy (e.g. nginx).
-		// You must write the x-forwarded-for header to determine the
-		// client's real IP address.
-		return client.upgradeReq.headers['x-forwarded-for'];
-	}
-	else {
-		return client.upgradeReq.connection.remoteAddress;
-	}
-}
-
-function hash(password) {
-	let sha = crypto.createHash('sha256');
-	sha.update(password + Server.Config.salt);
-	return sha.digest('base64').substr(0, 6);
-}
-
-function isAdmin(client) {
-	return client.nick === Server.Config.admin;
-}
-
-function isMod(client) {
-	if (isAdmin(client)) return true;
-	if (Server.Config.mods) {
-		if (client.trip && Server.Config.mods.includes(client.trip)) {
-			return true;
-		}
-	}
-	return false;
-}
 
 function getValue (value, ...params) { // returns the value, if it's a function it will be ran with the params
 	if (typeof(value) === 'function') {
@@ -157,7 +160,7 @@ class Command {
 	}
 
 	run (socket, args) {
-		if (POLICE.frisk(getAddress(socket), this.getPenalize(socket, args))) {
+		if (POLICE.frisk(Server.getAddress(socket), this.getPenalize(socket, args))) {
 			return this.getOnPenalized(socket, args);
 		}
 		if (this.verify(socket, args)) {
@@ -195,7 +198,7 @@ class Command {
 }
 
 
-let COMMANDS = {
+let COMMANDS = Server.COMMANDS = {
 	ping: new Command(null, _ => _), // Don't do anything
 	join: new Command((socket, args) => args.channel && args.nick && !socket.nick, (socket, args) => {
 		let channel = String(args.channel);
@@ -212,7 +215,7 @@ let COMMANDS = {
 		let nickArr = nick.split('#', 2);
 		nick = nickArr[0].trim();
 
-		if (!nicknameValid(nick)) {
+		if (!Server.nicknameValid(nick)) {
 			send({ cmd: 'warn', text: "Nickname must consist of up to 24 letters, numbers, and underscores" }, socket);
 			return;
 		}
@@ -224,10 +227,10 @@ let COMMANDS = {
 				return;
 			}
 		} else if (password) {
-			socket.trip = hash(password);
+			socket.trip = Server.hash(password);
 		}
 
-		let address = getAddress(socket);
+		let address = Server.getAddress(socket);
 		for (let client of Server.websocket.clients) {
 			if (client.channel === channel) {
 				if (client.nick.toLowerCase() === nick.toLowerCase()) {
@@ -238,7 +241,7 @@ let COMMANDS = {
 		}
 
 		// Announce the new user
-		broadcast({ cmd: 'onlineAdd', nick }, channel);
+		Server.broadcast({ cmd: 'onlineAdd', nick }, channel);
 
 		// Formally join channel
 		socket.channel = channel;
@@ -258,9 +261,9 @@ let COMMANDS = {
 		let text = args.modifiedText; // modified in the setPenalize.
 
 		let data = { cmd: 'chat', nick: socket.nick, text };
-		if (isAdmin(socket)) {
+		if (Server.isAdmin(socket)) {
 			data.admin = true;
-		} else if (isMod(socket)) {
+		} else if (Server.isMod(socket)) {
 			data.mod = true;
 		}
 		
@@ -268,7 +271,7 @@ let COMMANDS = {
 			data.trip = socket.trip;
 		}
 
-		broadcast(data, socket.channel);
+		Server.broadcast(data, socket.channel);
 	}).setPenalize((socket, args) => {
 		args.modifiedText = String(args.text)
 			.replace(/^\s*\n|^\s+$|\n\s*$/g, '') // strip newlines from beginning and end
@@ -309,7 +312,7 @@ let COMMANDS = {
 		for (let client of Server.websocket.clients) {
 			if (client.channel) {
 				channels[client.channel] = true;
-				ips[getAddress(client)] = true;
+				ips[Server.getAddress(client)] = true;
 			}
 		}
 
@@ -318,7 +321,7 @@ let COMMANDS = {
 
 	// Moderator-only commands below this point
 
-	ban: new Command((socket, args) => isMod(socket) && socket.channel && socket.nick && args.nick, (socket, args) => {
+	ban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.nick, (socket, args) => {
 		let nick = String(args.nick);
 
 		let badClient = Server.websocket.clients
@@ -329,17 +332,17 @@ let COMMANDS = {
 			return;
 		}
 
-		if (isMod(badClient)) {
+		if (Server.isMod(badClient)) {
 			send({ cmd: 'warn', text: "Cannot ban moderator" }, socket);
 			return;
 		}
 
-		POLICE.arrest(getAddress(badClient));
+		POLICE.arrest(Server.getAddress(badClient));
 		console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " in " + socket.channel);
-		broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
+		Server.broadcast({ cmd: 'info', text: "Banned " + nick }, socket.channel);
 	}).setPenalize(0.1), // very minute amount on the ban
 
-	unban: new Command((socket, args) => isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
+	unban: new Command((socket, args) => Server.isMod(socket) && socket.channel && socket.nick && args.ip, (socket, args) => {
 		let ip = String(args.ip);
 
 		POLICE.pardon(ip);
@@ -349,7 +352,7 @@ let COMMANDS = {
 
 	// Admin-only commands below this point
 
-	listUsers: new Command(isAdmin, socket => {
+	listUsers: new Command(Server.isAdmin, socket => {
 		let channels = {};
 		for (let client of Server.websocket.clients) {
 			if (client.channel) {
@@ -366,15 +369,15 @@ let COMMANDS = {
 		send({ cmd: 'info', text }, socket);
 	}),
 
-	broadcast: new Command((socket, args) => args.text && isAdmin(socket), (socket, args) => {
+	broadcast: new Command((socket, args) => args.text && Server.isAdmin(socket), (socket, args) => {
 		let text = String(args.text);
-		broadcast({ cmd: 'info', text: "Server broadcast: " + text });
+		Server.broadcast({ cmd: 'info', text: "Server broadcast: " + text });
 	})
 };
 
 
 // rate limiter
-let POLICE = {
+let POLICE = Server.POLICE = {
 	records: {},
 	halflife: 30000, // ms
 	threshold: 15,
