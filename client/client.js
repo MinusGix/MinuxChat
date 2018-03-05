@@ -108,7 +108,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: (args.banner || '') + ' Banned ' + args.nicks.join(', ')
+			text: (args.banner + ' ' || '') + 'Banned ' + args.nicks.join(', ')
 		};
 		pushMessage(msg);
 	},
@@ -148,7 +148,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: (args.kicker || '') + ' Kicked ' + args.nicks.join(', ')
+			text: (args.kicker + ' ' || '') + 'Kicked ' + args.nicks.join(', ')
 		};
 		pushMessage(msg);
 	},
