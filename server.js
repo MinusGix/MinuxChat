@@ -97,6 +97,14 @@ let Server = {
 			}
 		}
 		return false;
+	},
+
+	socketPair (socket) {
+		let pair = [socket.nick];	
+		if (socket.trip) {
+			pair.push(socket.trip);
+		}
+		return pair;
 	}
 };
 // Declaring global variables for simplicity
@@ -387,7 +395,7 @@ let COMMANDS = Server.COMMANDS = {
 				continue;
 			}
 			
-			kicked.push(nick + (badClient.trip ? '#' + badClient.trip : ''));
+			kicked.push(Server.socketPair(badClient));
 			badClient.channel = channel;
 			
 			console.log(socket.nick + " [" + socket.trip + "] kicked " + nick + " [" + badClient.trip + "] in " + socket.channel + " to " + channel);
@@ -397,15 +405,12 @@ let COMMANDS = Server.COMMANDS = {
 			for (let i = 0; i < kicked.length; i++) {
 				// this needs to be in a separate loop, otherwise the other kicked users will see other users leaving
 				// which might tip off a person spamming with multiple users.
-				Server.broadcast({ cmd: 'onlineRemove', nick }, socket.channel);
+				Server.broadcast({ cmd: 'onlineRemove', nick: kicked[i][0] }, socket.channel);
 			}
 		
 			let kicker;
 			if (!anon) {
-				kicker = socket.nick;
-				if (socket.trip) {
-					kicker += socket.trip;
-				}
+				kicker = Server.socketPair(socket);
 			}
 		
 			Server.broadcast({ 
@@ -427,7 +432,7 @@ let COMMANDS = Server.COMMANDS = {
 			if (!users[address]) {
 				users[address] = [];
 			}
-			users[address].push(client.nick + (client.trip ? '#' + client.trip : ''));
+			users[address].push(Server.socketPair(client));
 		});
 
 		let same = [];
@@ -470,7 +475,7 @@ let COMMANDS = Server.COMMANDS = {
 				continue;
 			}
 
-			banned.push(nick + (badClient.trip ? '#' + badClient.trip : ''));
+			banned.push(Server.socketPair(badClient));
 			POLICE.arrest(badClient);
 			console.log(socket.nick + " [" + socket.trip + "] banned " + nick + " [" + badClient.trip + "] in " + socket.channel);
 		}
@@ -478,10 +483,7 @@ let COMMANDS = Server.COMMANDS = {
 		if (banned.length !== 0) {
 			let /*bruce*/ banner;
 			if (!anon) {
-				banner = socket.nick;
-				if (socket.trip) {
-					banner += socket.trip;
-				}
+				banner = Server.socketPair(socket);
 			}
 		
 			Server.broadcast({ 
@@ -516,7 +518,7 @@ let COMMANDS = Server.COMMANDS = {
 
 		let users = Server.websocket.clients
 			.filter(client => client.channel === channel)
-			.map(client => client.nick + (client.trip ? '#' + client.trip : ''));
+			.map(client => Server.socketPair(client));
 		
 		send({ cmd: 'listUsersInChannel', channel, users }, socket);
 	}),
@@ -532,7 +534,7 @@ let COMMANDS = Server.COMMANDS = {
 				if (!channels[client.channel]) {
 					channels[client.channel] = [];
 				}
-				channels[client.channel].push(client.nick + (client.trip ? '#' + client.trip : ''));
+				channels[client.channel].push(Server.socketPair(client));
 			}
 		}
 
@@ -548,10 +550,7 @@ let COMMANDS = Server.COMMANDS = {
 		let nick;
 
 		if (!anon) {
-			nick = socket.nick;
-			if (socket.trip) {
-				sendText += '#' + socket.trip;
-			}
+			nick = Server.socketPair(socket);
 		}
 		Server.broadcast({ cmd: 'broadcast', text, nick });
 	})

@@ -110,7 +110,7 @@ let COMMANDS = {
 			cmd: 'info',
 			text: args.clientAmount + " users online:\n\n" + 
 				Object.entries(args.channels)
-					.map(channel => "?" + channel[0] + " " + channel[1].join(', '))
+					.map(channel => "?" + channel[0] + " " + channel[1].map(user => user.join('#')).join(', '))
 					.join('\n')
 		};
 		pushMessage(msg);
@@ -119,7 +119,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: 'Server Broadcast ' + (args.nick ? 'by ' + args.nick : '') + args.text
+			text: 'Server Broadcast ' + (args.nick.join('#') ? 'by ' + args.nick : '') + args.text
 		};
 		pushMessage(msg);
 	},
@@ -127,7 +127,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: 'Users online in ?' + args.channel + ' :\n' + (args.users.join(', ') || 'There is a sound of the void, no souls live in this dread realm.')
+			text: 'Users online in ?' + args.channel + ' :\n' + (args.users.map(user => user.join('#')).join(', ') || 'There is a sound of the void, no souls live in this dread realm.')
 		};
 		pushMessage(msg);
 	},
@@ -143,7 +143,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: (args.banner + ' ' || '') + 'Banned ' + args.nicks.join(', ')
+			text: (args.banner ? args.banner.join('#') + ' ' : '') + 'Banned ' + args.nicks.map(user => user.join('#')).join(', ')
 		};
 		pushMessage(msg);
 	},
@@ -151,7 +151,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: "Users with same IPs:\n" + args.same.map(users => '* Same: ' + users.join(', ')).join('\n')
+			text: "Users with same IPs:\n" + args.same.map(users => '* Same: ' + users.map(user => user.join('#')).join(', ')).join('\n')
 		};
 		pushMessage(msg);
 	},
@@ -159,7 +159,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: "You invited " + args.nick + " to ?" + args.channel
+			text: "You invited " + args.nick.join('#') + " to ?" + args.channel
 		};
 		pushMessage(msg);
 	},
@@ -167,7 +167,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: args.nick + " invited you to ?" + args.channel
+			text: args.nick.join('#') + " invited you to ?" + args.channel
 		};
 		pushMessage(msg);
 	},
@@ -183,7 +183,7 @@ let COMMANDS = {
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: (args.kicker + ' ' || '') + 'Kicked ' + args.nicks.join(', ')
+			text: (args.kicker ? args.kicker.join('#') + ' ' : '') + 'Kicked ' + args.nicks.map(user => user.join('#')).join(', ')
 		};
 		pushMessage(msg);
 	},

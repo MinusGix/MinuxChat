@@ -8,8 +8,6 @@ Server:
 	Add Whisper
 	Add mute, they can not send message for a duration.
 	Add a timed ban
-	Return an array of [nick, trip] whenever getting those
-		- Also make a function to get a sockets [nick, trip] for DRY
 Client:
 	Use addEventListener instead of onx for the listeners on the elements
 	Add Notifications for every message (toggleable)
