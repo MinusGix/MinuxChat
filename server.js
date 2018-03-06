@@ -292,9 +292,11 @@ let COMMANDS = Server.COMMANDS = {
 	chat: new Command()
 	.setVerify((socket, args) => socket.channel && socket.nick && args.text)
 	.setCommandFunction((socket, args) => {
-		let text = args.modifiedText; // modified in the setPenalize.
-
-		let data = { cmd: 'chat', nick: socket.nick, text };
+		let data = { 
+			cmd: 'chat', 
+			nick: socket.nick, 
+			text: args.modifiedText // modified in the setPenalize.
+		};
 		if (Server.isAdmin(socket)) {
 			data.admin = true;
 		} else if (Server.isMod(socket)) {
