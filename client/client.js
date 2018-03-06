@@ -155,19 +155,12 @@ let COMMANDS = {
 		};
 		pushMessage(msg);
 	},
-	invited: args => {
-		let msg = {
-			nick: '*',
-			cmd: 'info',
-			text: "You invited " + args.nick.join('#') + " to ?" + args.channel
-		};
-		pushMessage(msg);
-	},
 	invite: args => {
+		let { themself, nick, channel } = args;
 		let msg = {
 			nick: '*',
 			cmd: 'info',
-			text: args.nick.join('#') + " invited you to ?" + args.channel
+			text: (themself ? "You" : nick.join('#')) + " invited " + (themself ? nick.join('#') : 'you') + " to ?" + channel
 		};
 		pushMessage(msg);
 	},

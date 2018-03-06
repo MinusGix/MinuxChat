@@ -340,8 +340,8 @@ let COMMANDS = Server.COMMANDS = {
 			return;
 		}
 		// perhaps make it one command and for the inviter have a boolean argument telling them it's themselves?
-		send({ cmd: 'invited', nick: friend.nick, channel }, socket);
-		send({ cmd: 'invite', nick: socket.nick, channel }, friend);
+		send({ cmd: 'invite', themself: true, nick: Server.socketPair(friend), channel }, socket);
+		send({ cmd: 'invite', nick: Server.socketPair(socket), channel }, friend);
 	})
 	.setPenalize(_ => Server.Config.commands.invite.penalize)
 	.setOnPenalized(_ => Server.Config.commands.invite.onPenalized),
